@@ -87,11 +87,20 @@ class Hostmask:
 'Line(:dongs!dongs@lol.org PRIVMSG loldongs meow :dongs)'
 """
 class Line:
-    def __init__(self, **kwargs):
-        line = kwargs.get("line", None)
-        self.hostmask = kwargs.get("host", None)
-        self.command = kwargs.get("command", None)
-        self.params = kwargs.get("params", [])
+    def __init__(self, *kargs, **kwargs):
+        if len(kargs) == 0:
+            line = kwargs.get("line", None)
+            self.hostmask = kwargs.get("host", None)
+            self.command = kwargs.get("command", None)
+            self.params = kwargs.get("params", [])
+        elif len(kargs) == 1:
+            line = kargs[0]
+        elif len(kargs) == 2:
+            self.command = kargs[0]
+            self.params = kargs[1]
+        else:
+            self.command = kargs[0]
+            self.params = kargs[1:]
 
         if line is not None:
             self.__parse_line(line)
@@ -104,12 +113,10 @@ class Line:
 
         # Split out the last param, which might have spaces
         # If not there, this transformation does nothing
+        # XXX - I don't like partition here like this at all. It might not
+        # handle tab. But it works ok and no server I know of will send anything
+        # else other than space-separated parameters.
         line, sep, lparam = line.partition(' :')
-        #lparam_pos = line.find(':', 1)
-        #if lparam_pos > -1 and lparam_pos < (len(line) - 1):
-        #    line, lparam = line[:lparam_pos], line[lparam_pos+1]
-        #else:
-        #    lparam = None
 
         # Split
         sp = [x for x in line.split() if x is not None]
@@ -140,7 +147,7 @@ class Line:
         line.append(self.command)
 
         if self.params:
-            if ' ' in self.params[-1]:
+            if any(x in (' ', ':') for x in self.params[-1]):
                 line.extend(self.params[:-1])
                 line.append(':' + self.params[-1])
             else:
