@@ -46,10 +46,16 @@ class IRCClient:
         if any(e is None for e in (self.host, self.port)):
             raise RuntimeError('No valid host or port specified')
 
-        if ssl is None and self.use_ssl:
-            raise RuntimeError('SSL support is unavailable')
+        if ssl is None:
+            if self.use_ssl:
+                # Explicit SSL use
+                raise RuntimeError('SSL support is unavailable')
+            elif self.use_starttls:
+                # Implicit SSL use
+                warnings.warn('Unable to use STARTTLS; SSL support is unavailable')
+                self.use_starttls = False
         elif self.use_ssl:
-            # Unneeded
+            # Unneeded and probably harmful. :P
             self.use_starttls = False
 
         self.__buffer = ''
@@ -72,9 +78,6 @@ class IRCClient:
         self.__last_pingstr = None
         self.__last_pingtime = 0
         self.lag = 0
-
-        # Handshake
-        self.handshake = 0
 
         # Timers
         self.timers = dict()
@@ -106,8 +109,11 @@ class IRCClient:
 
             # Capabilities
             # TODO - sasl
-            self.cap_req = ['multi-prefix', 'tls', 'account-notify',
+            self.cap_req = ['multi-prefix', 'account-notify',
                             'away-notify', 'extended-join']
+
+            if self.use_starttls:
+                self.cap_req.append('tls')
 
             # Caps we know
             self.supported_cap = []
