@@ -7,23 +7,25 @@ flexibility whilst supporting major extensions built-in and many features that
 users might consider desirable, such as user tracking.
 
 This bot has been designed largely with IRCv3.1 in mind (http://ircv3.org).
-No features of IRCv3.2 are not yet implemented but probably will be at some
-indeterminate point.
+No features of IRCv3.2 are mostly not yet implemented yet (some limited parsing
+ability exists for message tags) but probably will be at some indeterminate
+point.
 
 2) Design
-IRCLib is unfortunately designed with blocking I/O in mind, as that is the
-simplest paradigm to program for (and most common), and things like gevent
-exist. The Python threading.Timer module is used but can be easily hotswapped
-for another form of asynchronous timers. There exists some limited support for
-changing the bot to use non-blocking sockets, not discussed here. More support
-for this is planned in the future.
+IRCLib is primarily designed with blocking I/O in mind, as that is the simplest
+paradigm to program for (and most common), and things like gevent exist. It
+should not be too difficult to force the bot to use a non-blocking mode of
+operation with custom send/recv methods.
+
+The Python threading.Timer module is used but can be easily swapped for any
+other form of asynchronous timers.
 
 The library is at some point going to also speak TS6, hence common/ and client/.
+It is provided a server/ will eventually exist.
 
 3) Bugs
 Probably many! Tell me about them
 
 4) Support
 Try irc.interlinked.me #irclib. :)
-
 
