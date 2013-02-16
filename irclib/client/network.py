@@ -48,6 +48,9 @@ class IRCClient:
 
         if ssl is None and self.use_ssl:
             raise RuntimeError("SSL support is unavailable")
+        elif self.use_ssl:
+            # Unneeded
+            self.use_starttls = False
 
         self.__buffer = ''
 
@@ -99,7 +102,7 @@ class IRCClient:
         self.channels = dict()
         self.users = dict()
 
-
+        # Our logger
         self.logger = logging.getLogger(__name__)
 
 
@@ -164,6 +167,14 @@ class IRCClient:
             self.sock.settimeout(timeout)
         self.sock.connect((self.host, self.port))
 
+        if self.use_ssl:
+            self.sock = ssl.wrap_socket(self.sock)
+
+        self.handshake()
+
+
+    """ Start initial handshake """
+    def handshake(self):
         if not self.use_starttls or not self.use_cap:
             self.__register_self()
         elif self.use_cap:
