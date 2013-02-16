@@ -1,0 +1,29 @@
+IRCLib Copyright Â© 2013 Elizabeth Myers. All rights reserved
+
+1) Introduction
+IRCLib is a Python IRC library for the 21st century and first decade. It is
+designed with the needs of modern IRC in mind and also designed for maximum
+flexibility whilst supporting major extensions built-in and many features that
+users might consider desirable, such as user tracking.
+
+This bot has been designed largely with IRCv3.1 in mind (http://ircv3.org).
+No features of IRCv3.2 are not yet implemented but probably will be at some
+indeterminate point.
+
+2) Design
+IRCLib is unfortunately designed with blocking I/O in mind, as that is the
+simplest paradigm to program for (and most common), and things like gevent
+exist. The Python threading.Timer module is used but can be easily hotswapped
+for another form of asynchronous timers. There exists some limited support for
+changing the bot to use non-blocking sockets, not discussed here. More support
+for this is planned in the future.
+
+The library is at some point going to also speak TS6, hence common/ and client/.
+
+3) Bugs
+Probably many! Tell me about them
+
+4) Support
+Try irc.interlinked.me #irclib. :)
+
+
