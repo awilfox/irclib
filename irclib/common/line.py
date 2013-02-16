@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+from itertools import islice
+from collections import deque
+
 """ Stores a user hostmask
 
 >>> repr(Hostmask(mask="dongs!cocks@lol.org"))
@@ -120,33 +123,37 @@ class Line:
         line, sep, lparam = line.partition(' :')
 
         # Split
-        sp = [x for x in line.split() if x is not None]
+        sp = deque([x for x in line.split() if x is not None])
+
 
         # Do we have tags?
         if sp[0].startswith('@'):
             # TODO - more parsing of tags
             self.tags = sp[0][1:]
-            sp = sp[1:]
+            sp.popleft()
         else:
             self.tags = None
 
         # Do we have a mask?
         if sp[0].startswith(':'):
             self.hostmask = Hostmask(mask=sp[0][1:])
-            sp = sp[1:]
+            sp.popleft()
         else:
             self.hostmask = None
 
         assert len(sp) > 0
 
         # Command next
-        self.command = sp[0]
+        self.command = sp.popleft()
 
         # Params?
-        self.params = sp[1:] if len(sp) >= 1 else []
+        self.params = sp
         if lparam:
             # Append
             self.params.append(lparam)
+
+        # Because deques are poopy and don't support nice things like slicing
+        self.params = list(self.params)
 
     def __str__(self):
         line = []
