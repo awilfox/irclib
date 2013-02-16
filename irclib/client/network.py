@@ -229,7 +229,7 @@ class IRCClient:
 
 
     """ Dispatch for a command """
-    def call_dispatch(self, line, cmd):
+    def call_dispatch(self, line):
         if line.command in self.dispatch_cmd:
             self.dispatch_cmd[line.command](line)
 
@@ -239,7 +239,7 @@ class IRCClient:
         lines = [Line(line=line) for line in lines]
 
         for line in lines:
-            self.call_dispatch(self, line)
+            self.call_dispatch(line)
 
         return lines
 
