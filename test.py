@@ -18,7 +18,7 @@ def reply(line, generator):
 
     generator.send(Line(command='PRIVMSG', params=(target, 'mmm :) cocks.')))
 
-n = network.IRCClient(nick='shittybot', host='irc.interlinked.me', port=6667,
+n = network.IRCClient(nick='shittybot', host='okami.interlinked.me', port=6667,
                       channels=['#alyx'])
 n.connect()
 

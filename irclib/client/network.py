@@ -5,6 +5,7 @@ import warnings
 import socket
 import string
 import time
+import logging
 
 from random import choice, randint
 from threading import Timer, Lock
@@ -64,14 +65,18 @@ class IRCClient:
         self.dispatch_cmd["PING"] = self.dispatch_ping
         self.dispatch_cmd["PONG"] = self.dispatch_pong
 
+        if self.use_starttls:
+            self.dispatch_cmd["670"] = self.dispatch_starttls
+            self.dispatch_cmd["691"] = self.dispatch_starttls
+
         # CAP state
         if self.use_cap:
             self.dispatch_cmd["CAP"] = self.dispatch_cap
 
             # Capabilities
-            self.capreq = ['multi-prefix']
+            self.cap_req = ['multi-prefix', 'tls']
             # TODO - support these
-            #, 'account-notify', 'away-notify', 'extended-join', 'sasl', 'tls']
+            #, 'account-notify', 'away-notify', 'extended-join', 'sasl']
 
             # Caps we know
             self.supported_cap = []
@@ -93,6 +98,9 @@ class IRCClient:
         # Authoriative
         self.channels = dict()
         self.users = dict()
+
+
+        self.logger = logging.getLogger(__name__)
 
 
     """ Pretty printing of IRC stuff outgoing
@@ -143,6 +151,9 @@ class IRCClient:
             self.cmdwrite("NICK", [self.nick])
             self.registered = True
 
+            # TODO - sasl!
+
+
     """ Connect to the server
 
     timeout for connect defaults to 10. Set to None for no timeout.
@@ -157,7 +168,7 @@ class IRCClient:
             self.__register_self()
         elif self.use_cap:
             # Request caps
-            self.cmdwrite("CAP", ["REQ", ' '.join(self.capreq)])
+            self.cmdwrite("CAP", ["REQ", ' '.join(self.cap_req)])
 
 
     """ Raw receive of lines. Only does basic wrapping in a Line instance.
@@ -202,15 +213,36 @@ class IRCClient:
     def dispatch_cap(self, line):
         if line.params[1] == 'ACK':
             # Caps follow
-            self.supported_cap = line.params[-1].split()
+            self.supported_cap = line.params[-1].lower().split()
             
             # End negotiation
             self.cmdwrite("CAP", ["END"])
 
-            # Register
-            self.__register_self()
+            if 'tls' in self.supported_cap and self.use_starttls and not self.use_ssl:
+                # Start TLS negotiation
+                self.cmdwrite("STARTTLS")
 
-            # TODO - sasl etc. :P
+            else:
+                # Register only if we don't need STARTTLS
+                self.__register_self()
+
+
+    """ Dispatch STARTTLS """
+    def dispatch_starttls(self, line):
+        if line.command == '670':
+            # Wrap the socket
+            self.sock = ssl.wrap_socket(self.sock)
+            self.use_ssl = True
+
+            # Now safe to do this
+            self.__register_self()
+        elif line.command == '691':
+            # Failed somehow.
+            self.use_ssl = False
+            self.logger.critical('SSL is non-functional on this connection!')
+        else:
+            self.logger.warn('STARTTLS handler called for no reason o.O')
+            pass
 
 
     """ Generic dispatcher for ping """
@@ -240,8 +272,7 @@ class IRCClient:
 
         self.__last_pingstr = None
         self.lag = time.time() - self.__last_pingtime
-        # XXX properly log
-        print("[NOTICE] LAG:", self.lag)
+        self.logger.info("LAG: {}".format(self.lag))
 
 
     """ Generic dispatch for RPL_WELCOME 
@@ -275,7 +306,10 @@ class IRCClient:
                 clen = len(key) + 1
 
             # Sod it. this will never fit. :/
-            if clen > MAXLEN: continue
+            if clen > MAXLEN:
+                self.logger.error("Unable to join channel:key; too long: {}:{}".format(
+                    ch, key))
+                continue
 
             # Full buffer!
             if (buflen + clen) > MAXLEN or len(chbuf) >= 4:
