@@ -38,6 +38,8 @@ class IRCClient:
         self.default_channels = kwargs.get('channels', [])
         self.channel_keys = kwargs.get('channel_keys', {})
         self.keepalive = kwargs.get('keepalive', 15)
+        self.use_cap = kwargs.get('use_cap', True)
+        self.use_starttls = kwargs.get('use_starttls', True)
 
 
         if any(e is None for e in (self.host, self.port)):
@@ -52,11 +54,6 @@ class IRCClient:
         self.identified = False
         self.isupport = dict()
 
-        # Capabilities
-        self.caps = ['multi-prefix']
-        # TODO - support these
-        #, 'account-notify', 'away-notify', 'extended-join', 'sasl', 'tls']
-
         # Locks writes
         self.writelock = Lock()
 
@@ -67,10 +64,28 @@ class IRCClient:
         self.dispatch_cmd["PING"] = self.dispatch_ping
         self.dispatch_cmd["PONG"] = self.dispatch_pong
 
+        # CAP state
+        if self.use_cap:
+            self.dispatch_cmd["CAP"] = self.dispatch_cap
+
+            # Capabilities
+            self.capreq = ['multi-prefix']
+            # TODO - support these
+            #, 'account-notify', 'away-notify', 'extended-join', 'sasl', 'tls']
+
+            # Caps we know
+            self.supported_cap = []
+
+        # Are we registered as a user?
+        self.registered = False
+
         # Lag stats
         self.__last_pingstr = None
         self.__last_pingtime = 0
         self.lag = 0
+
+        # Handshake
+        self.handshake = 0
 
         # Timers
         self.timers = dict()
@@ -121,6 +136,13 @@ class IRCClient:
         del self.timers[name]
 
 
+    """ Write the user/nick line """
+    def __register_self(self):
+        if not self.registered:
+            self.cmdwrite("USER", [self.user, '*', '8', self.realname])
+            self.cmdwrite("NICK", [self.nick])
+            self.registered = True
+
     """ Connect to the server
 
     timeout for connect defaults to 10. Set to None for no timeout.
@@ -131,9 +153,11 @@ class IRCClient:
             self.sock.settimeout(timeout)
         self.sock.connect((self.host, self.port))
 
-        # TODO - STARTTLS, CAP
-        self.cmdwrite("USER", [self.user, '*', '8', self.realname])
-        self.cmdwrite("NICK", [self.nick])
+        if not self.use_starttls or not self.use_cap:
+            self.__register_self()
+        elif self.use_cap:
+            # Request caps
+            self.cmdwrite("CAP", ["REQ", ' '.join(self.capreq)])
 
 
     """ Raw receive of lines. Only does basic wrapping in a Line instance.
@@ -174,6 +198,21 @@ class IRCClient:
                     self.linewrite(line)
 
 
+    """ Dispatches CAP stuff """
+    def dispatch_cap(self, line):
+        if line.params[1] == 'ACK':
+            # Caps follow
+            self.supported_cap = line.params[-1].split()
+            
+            # End negotiation
+            self.cmdwrite("CAP", ["END"])
+
+            # Register
+            self.__register_self()
+
+            # TODO - sasl etc. :P
+
+
     """ Generic dispatcher for ping """
     def dispatch_ping(self, line):
         self.cmdwrite('PONG', line.params)
@@ -203,6 +242,7 @@ class IRCClient:
         self.lag = time.time() - self.__last_pingtime
         # XXX properly log
         print("[NOTICE] LAG:", self.lag)
+
 
     """ Generic dispatch for RPL_WELCOME 
     
