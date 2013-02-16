@@ -228,13 +228,18 @@ class IRCClient:
             curlen += self.sock.send(data[curlen:])
 
 
+    """ Dispatch for a command """
+    def dispatch_cmd(self, line, cmd):
+        if line.command in self.dispatch_cmd:
+            self.dispatch_cmd[line.command](line)
+
+
     """ Recieve lines """
     def raw_receive(self, lines):
         lines = [Line(line=line) for line in lines]
 
         for line in lines:
-            if line.command in self.dispatch_cmd:
-                self.dispatch_cmd[line.command](line)
+            __dispatch_cmd(self, line)
 
         return lines
 
