@@ -305,8 +305,6 @@ class IRCClient:
     """ Generic dispatch for RPL_WELCOME 
     
     The default does joins and such
-
-    XXX - dike this out a bit more
     """
     def dispatch_001(self, line):
         # Set up timer for lagometer
