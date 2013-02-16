@@ -3,6 +3,11 @@
 import errno
 import warnings
 import socket
+import string
+import time
+
+from random import choice, randint
+from threading import Timer, Lock
 
 from irclib.common.line import Line
 
@@ -12,6 +17,12 @@ except ImportError:
     warnings.warn("Could not load SSL implementation, SSL will not work!",
                   RuntimeWarning)
     ssl = None
+
+
+def randomstr():
+    validstr = string.ascii_letters + string.digits
+    return ''.join([choice(validstr) for x in range(randint(3, 10))])
+
 
 class IRCClient:
     def __init__(self, **kwargs):
@@ -25,7 +36,9 @@ class IRCClient:
         self.use_ssl = kwargs.get('use_ssl', False)
         self.password = kwargs.get('password', None)
         self.default_channels = kwargs.get('channels', [])
-        self.default_keys = kwargs.get('channel_keys', {})
+        self.channel_keys = kwargs.get('channel_keys', {})
+        self.keepalive = kwargs.get('keepalive', 15)
+
 
         if any(e is None for e in (self.host, self.port)):
             raise RuntimeError("No valid host or port specified")
@@ -42,13 +55,25 @@ class IRCClient:
         # Capabilities
         self.caps = ['multi-prefix']
         # TODO - support these
-        #, 'account-notify', 'away-notify', 'extended-join', 'sasl', 'tls'*]
+        #, 'account-notify', 'away-notify', 'extended-join', 'sasl', 'tls']
+
+        # Locks writes
+        self.writelock = Lock()
 
         # Dispatch
         self.dispatch_cmd = dict()
 
         self.dispatch_cmd["001"] = self.dispatch_001
         self.dispatch_cmd["PING"] = self.dispatch_ping
+        self.dispatch_cmd["PONG"] = self.dispatch_pong
+
+        # Lag stats
+        self.__last_pingstr = None
+        self.__last_pingtime = 0
+        self.lag = 0
+
+        # Timers
+        self.timers = dict()
 
         # Authoriative
         self.channels = dict()
@@ -73,13 +98,27 @@ class IRCClient:
 
     """ Write a Line instance to the wire """
     def linewrite(self, line):
-        self.writeprint(line)
-        self.sock.send(bytes(line))
+        with self.writelock:
+            self.writeprint(line)
+            self.sock.send(bytes(line))
 
 
     """ Write a raw command to the wire """
     def cmdwrite(self, command, params=[]):
         self.linewrite(Line(command=command, params=params))
+
+
+    """ Spawns a oneshot timer """
+    def timer(self, name, time, function, *args, **kwargs):
+        self.timers[name] = Timer(time, function, args=args,
+                                  kwargs=kwargs)
+        self.timers[name].start()
+
+
+    """ Cancels a timer if it has not run yet """
+    def canceltimer(self, name):
+        self.timers[name].cancel()
+        del self.timers[name]
 
 
     """ Connect to the server
@@ -91,6 +130,8 @@ class IRCClient:
         if timeout is not None:
             self.sock.settimeout(timeout)
         self.sock.connect((self.host, self.port))
+
+        # TODO - STARTTLS, CAP
         self.cmdwrite("USER", [self.user, '*', '8', self.realname])
         self.cmdwrite("NICK", [self.nick])
 
@@ -138,24 +179,59 @@ class IRCClient:
         self.cmdwrite('PONG', line.params)
 
 
+    """ Sends a keepalive message """
+    def dispatch_keepalive(self):
+        if self.__last_pingstr is not None:
+            raise socket.error("Socket timed out")
+
+        self.__last_pingtime = time.time()
+        self.__last_pingstr = randomstr()
+
+        self.cmdwrite('PING', [self.__last_pingstr])
+        self.timer("keepalive", self.keepalive, self.dispatch_keepalive)
+
+
+    """ Dispatches keepalive message """
+    def dispatch_pong(self, line):
+        if self.__last_pingstr is None:
+            return
+
+        if line.params[-1] != self.__last_pingstr:
+            return
+
+        self.__last_pingstr = None
+        self.lag = time.time() - self.__last_pingtime
+        # XXX properly log
+        print("[NOTICE] LAG:", self.lag)
+
     """ Generic dispatch for RPL_WELCOME 
     
     The default does joins and such
+
+    XXX - dike this out a bit more
     """
     def dispatch_001(self, line):
-        # Combine channels
+        # Set up timer for lagometer
+        self.timer("keepalive", self.keepalive, self.dispatch_keepalive)
+
+        # Do joins
+        self.combine_channels(self.default_channels, self.channel_keys)
+
+
+    """ Combine channels """
+    def combine_channels(self, chlist, chkeys={}):
         chcount = 0
         buflen = 0
         sbuf = []
         chbuf = []
         keybuf = []
         MAXLEN = 500
-        for ch in self.default_channels:
+        for ch in chlist:
             clen = len(ch) + 1
             key = None 
-            if ch in self.default_keys:
+            if ch in chkeys:
                 # +1 for space
-                key = self.default_keys[ch]
+                key = chkeys[ch]
                 clen = len(key) + 1
 
             # Sod it. this will never fit. :/
@@ -181,4 +257,3 @@ class IRCClient:
         for buf in sbuf:
             channels, keys = ','.join(buf[0]), ' '.join(buf[1])
             self.cmdwrite('JOIN', (channels, keys))
-
