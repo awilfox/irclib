@@ -63,26 +63,7 @@ class IRCClient:
 
         # Dispatch
         self.dispatch_cmd = dict()
-
-        self.dispatch_cmd["001"] = self.dispatch_001
-        self.dispatch_cmd["PING"] = self.dispatch_ping
-        self.dispatch_cmd["PONG"] = self.dispatch_pong
-
-        if self.use_starttls:
-            self.dispatch_cmd["670"] = self.dispatch_starttls
-            self.dispatch_cmd["691"] = self.dispatch_starttls
-
-        # CAP state
-        if self.use_cap:
-            self.dispatch_cmd["CAP"] = self.dispatch_cap
-
-            # Capabilities
-            self.cap_req = ['multi-prefix', 'tls']
-            # TODO - support these
-            #, 'account-notify', 'away-notify', 'extended-join', 'sasl']
-
-            # Caps we know
-            self.supported_cap = []
+        self.default_dispatch()
 
         # Are we registered as a user?
         self.registered = False
@@ -104,6 +85,32 @@ class IRCClient:
 
         # Our logger
         self.logger = logging.getLogger(__name__)
+
+
+    """ Create default dispatches
+    
+    Only override this if you know what this does and what you're doing.
+    """
+    def default_dispatch(self):
+        self.dispatch_cmd["001"] = self.dispatch_001
+        self.dispatch_cmd["PING"] = self.dispatch_ping
+        self.dispatch_cmd["PONG"] = self.dispatch_pong
+
+        if self.use_starttls:
+            self.dispatch_cmd["670"] = self.dispatch_starttls
+            self.dispatch_cmd["691"] = self.dispatch_starttls
+
+        # CAP state
+        if self.use_cap:
+            self.dispatch_cmd["CAP"] = self.dispatch_cap
+
+            # Capabilities
+            # TODO - sasl
+            self.cap_req = ['multi-prefix', 'tls', 'account-notify',
+                            'away-notify', 'extended-join']
+
+            # Caps we know
+            self.supported_cap = []
 
 
     """ Pretty printing of IRC stuff outgoing
