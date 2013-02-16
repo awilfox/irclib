@@ -123,7 +123,7 @@ class IRCClient:
     def linewrite(self, line):
         with self.writelock:
             self.writeprint(line)
-            self.sock.send(bytes(line))
+            self.send(bytes(line))
 
 
     """ Write a raw command to the wire """
@@ -171,7 +171,7 @@ class IRCClient:
             self.cmdwrite("CAP", ["REQ", ' '.join(self.cap_req)])
 
 
-    """ Recieve data on the wire 
+    """ Recieve data from the wire 
     
     After buffering, call raw_receive with the lines we have.
     NOTE: ONLY USE *FULL COMPLETE* LINES!
@@ -194,6 +194,14 @@ class IRCClient:
 
         if lines:
             return self.raw_receive(lines)
+
+
+    """ Send data onto the wire """
+    def send(self, data):
+        sendlen = len(data)
+        curlen = 0
+        while curlen < sendlen:
+            curlen += self.sock.send(data[curlen:])
 
 
     """ Recieve lines """
