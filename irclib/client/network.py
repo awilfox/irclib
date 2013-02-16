@@ -15,7 +15,7 @@ from irclib.common.line import Line
 try:
     import ssl
 except ImportError:
-    warnings.warn("Could not load SSL implementation, SSL will not work!",
+    warnings.warn('Could not load SSL implementation, SSL will not work!',
                   RuntimeWarning)
     ssl = None
 
@@ -44,10 +44,10 @@ class IRCClient:
 
 
         if any(e is None for e in (self.host, self.port)):
-            raise RuntimeError("No valid host or port specified")
+            raise RuntimeError('No valid host or port specified')
 
         if ssl is None and self.use_ssl:
-            raise RuntimeError("SSL support is unavailable")
+            raise RuntimeError('SSL support is unavailable')
         elif self.use_ssl:
             # Unneeded
             self.use_starttls = False
@@ -92,17 +92,17 @@ class IRCClient:
     Only override this if you know what this does and what you're doing.
     """
     def default_dispatch(self):
-        self.dispatch_cmd["001"] = self.dispatch_001
-        self.dispatch_cmd["PING"] = self.dispatch_ping
-        self.dispatch_cmd["PONG"] = self.dispatch_pong
+        self.dispatch_cmd['001'] = self.dispatch_001
+        self.dispatch_cmd['PING'] = self.dispatch_ping
+        self.dispatch_cmd['PONG'] = self.dispatch_pong
 
         if self.use_starttls:
-            self.dispatch_cmd["670"] = self.dispatch_starttls
-            self.dispatch_cmd["691"] = self.dispatch_starttls
+            self.dispatch_cmd['670'] = self.dispatch_starttls
+            self.dispatch_cmd['691'] = self.dispatch_starttls
 
         # CAP state
         if self.use_cap:
-            self.dispatch_cmd["CAP"] = self.dispatch_cap
+            self.dispatch_cmd['CAP'] = self.dispatch_cap
 
             # Capabilities
             # TODO - sasl
@@ -118,7 +118,7 @@ class IRCClient:
     Override this for custom logging.
     """
     def writeprint(self, line):
-        print("<", repr(line))
+        print('<', repr(line))
 
 
     """ Pretty printing of IRC stuff incoming
@@ -126,7 +126,7 @@ class IRCClient:
     Override this for custom logging
     """
     def readprint(self, line):
-        print(">", repr(line))
+        print('>', repr(line))
 
 
     """ Write a Line instance to the wire """
@@ -157,8 +157,8 @@ class IRCClient:
     """ Write the user/nick line """
     def __register_self(self):
         if not self.registered:
-            self.cmdwrite("USER", [self.user, '*', '8', self.realname])
-            self.cmdwrite("NICK", [self.nick])
+            self.cmdwrite('USER', [self.user, '*', '8', self.realname])
+            self.cmdwrite('NICK', [self.nick])
             self.registered = True
 
             # TODO - sasl!
@@ -186,7 +186,7 @@ class IRCClient:
             self.__register_self()
         elif self.use_cap:
             # Request caps
-            self.cmdwrite("CAP", ["REQ", ' '.join(self.cap_req)])
+            self.cmdwrite('CAP', ['REQ', ' '.join(self.cap_req)])
 
 
     """ Recieve data from the wire 
@@ -250,11 +250,11 @@ class IRCClient:
             self.supported_cap = line.params[-1].lower().split()
             
             # End negotiation
-            self.cmdwrite("CAP", ["END"])
+            self.cmdwrite('CAP', ['END'])
 
             if 'tls' in self.supported_cap and self.use_starttls and not self.use_ssl:
                 # Start TLS negotiation
-                self.cmdwrite("STARTTLS")
+                self.cmdwrite('STARTTLS')
 
             else:
                 # Register only if we don't need STARTTLS
@@ -287,13 +287,13 @@ class IRCClient:
     """ Sends a keepalive message """
     def dispatch_keepalive(self):
         if self.__last_pingstr is not None:
-            raise socket.error("Socket timed out")
+            raise socket.error('Socket timed out')
 
         self.__last_pingtime = time.time()
         self.__last_pingstr = randomstr()
 
         self.cmdwrite('PING', [self.__last_pingstr])
-        self.timer("keepalive", self.keepalive, self.dispatch_keepalive)
+        self.timer('keepalive', self.keepalive, self.dispatch_keepalive)
 
 
     """ Dispatches keepalive message """
@@ -306,7 +306,7 @@ class IRCClient:
 
         self.__last_pingstr = None
         self.lag = time.time() - self.__last_pingtime
-        self.logger.info("LAG: {}".format(self.lag))
+        self.logger.info('LAG: {}'.format(self.lag))
 
 
     """ Generic dispatch for RPL_WELCOME 
@@ -315,7 +315,7 @@ class IRCClient:
     """
     def dispatch_001(self, line):
         # Set up timer for lagometer
-        self.timer("keepalive", self.keepalive, self.dispatch_keepalive)
+        self.timer('keepalive', self.keepalive, self.dispatch_keepalive)
 
         # Do joins
         self.combine_channels(self.default_channels, self.channel_keys)
@@ -339,7 +339,7 @@ class IRCClient:
 
             # Sod it. this will never fit. :/
             if clen > MAXLEN:
-                self.logger.error("Unable to join channel:key; too long: {}:{}".format(
+                self.logger.error('Unable to join channel:key; too long: {}:{}'.format(
                     ch, key))
                 continue
 
