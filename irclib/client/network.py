@@ -239,7 +239,7 @@ class IRCClient:
         lines = [Line(line=line) for line in lines]
 
         for line in lines:
-            __dispatch_cmd(self, line)
+            self.dispatch_cmd(self, line)
 
         return lines
 
