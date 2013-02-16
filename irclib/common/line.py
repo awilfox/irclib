@@ -90,6 +90,7 @@ class Line:
     def __init__(self, *kargs, **kwargs):
         if len(kargs) == 0:
             line = kwargs.get("line", None)
+            self.tags = kwargs.get("tags", None)
             self.hostmask = kwargs.get("host", None)
             self.command = kwargs.get("command", None)
             self.params = kwargs.get("params", [])
@@ -120,6 +121,14 @@ class Line:
 
         # Split
         sp = [x for x in line.split() if x is not None]
+
+        # Do we have tags?
+        if sp[0].startswith('@'):
+            # TODO - more parsing of tags
+            self.tags = sp[0][1:]
+            sp = sp[1:]
+        else:
+            self.tags = None
 
         # Do we have a mask?
         if sp[0].startswith(':'):
