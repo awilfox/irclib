@@ -171,11 +171,14 @@ class IRCClient:
             self.cmdwrite("CAP", ["REQ", ' '.join(self.cap_req)])
 
 
-    """ Raw receive of lines. Only does basic wrapping in a Line instance.
-        Will wait until it has at least one line.
+    """ Recieve data on the wire 
+    
+    After buffering, call raw_receive with the lines we have.
+    NOTE: ONLY USE *FULL COMPLETE* LINES!
+
+    Return raw_recieve to receive your processed lines after :p.
     """
-    def raw_receive(self):
-        # assume we're connected.
+    def recv(self):
         self.sock.settimeout(None)
         while '\r\n' not in self.__buffer:
             data = self.sock.recv(2048)
@@ -187,9 +190,14 @@ class IRCClient:
             self.__buffer += data.decode('UTF-8', 'replace')
 
         lines = self.__buffer.split('\r\n')
-        self.__buffer = lines[-1]
-        del lines[-1]
+        self.__buffer = lines.pop() 
 
+        if lines:
+            return self.raw_receive(lines)
+
+
+    """ Recieve lines """
+    def raw_receive(self, lines):
         lines = [Line(line=line) for line in lines]
 
         for line in lines:
@@ -202,7 +210,7 @@ class IRCClient:
     """ Generator for IRC lines, e.g. non-terminating stream """
     def get_lines(self):
         while True:
-            for x in self.raw_receive():
+            for x in self.recv():
                 self.readprint(x)
                 line = (yield x)
                 if line is not None:
