@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from irclib.client import network
+from irclib.client import client
 from irclib.common.line import Line
 from random import choice, randint
 import logging
@@ -62,9 +62,8 @@ def spew(line, generator):
 
     generator.send(Line(command='PRIVMSG', params=(target, choice(randomshit))))
 
-n = network.IRCClient(nick='Vorpel', host='okami.interlinked.me', port=6667,
-                      channels=['#alyx', '#irclib'])
-n.connect()
+n = client.IRCClient(nick='Vorpel', host='okami.interlinked.me', port=6667,
+                     channels=['#alyx', '#irclib'])
 
 g = n.get_lines()
 for l in g:
