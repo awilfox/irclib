@@ -3,6 +3,10 @@
 from irclib.client import network
 from irclib.common.line import Line
 from random import choice, randint
+import logging
+
+# Set log level
+logging.basicConfig(level=logging.INFO)
 
 randomshit = [
     'I have to go in five minutes',
@@ -13,7 +17,7 @@ randomshit = [
     'I need to shower in a few minutes. make it quick',
     '^',
     'Liz, ^',
-    'Night ->',
+    'Night →',
     'bbl',
     'Perhaps you should use erlang, or scheme.',
     'FORTH is a wonderful language',
@@ -32,6 +36,14 @@ randomshit = [
     'try playing skyrim',
     'where is the data taken from?',
     '\x01ACTION made a bot in bash\x01',
+    '\x01ACTION prefers erlang\x01',
+    'Perhaps a high level language with a generational GC like haskell or erlang',
+    'I hate git. We only use hg at work',
+    'How do I sync my SD card to my computer? too cheap to buy a $1 adaptor',
+    'I have mouse arm and my wrists hurt',
+    'I can\'t type right now',
+    'can you repeat that? it\'s out of scrollback',
+    'too lazy to scroll up, what did you say',
 ]
 
 def spew(line, generator):
