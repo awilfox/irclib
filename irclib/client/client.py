@@ -138,15 +138,6 @@ class IRCClient:
             self.network.cmdwrite('CAP', ['REQ', ' '.join(self.cap_req)])
 
 
-    """ Generator for IRC lines, e.g. non-terminating stream """
-    def get_lines(self):
-        while True:
-            for l in self.network.process_in():
-                line = (yield l)
-                if line is not None:
-                    self.linewrite(line)
-
-
     """ Dispatches CAP stuff """
     def dispatch_cap(self, line):
         if line.params[1] == 'ACK':
