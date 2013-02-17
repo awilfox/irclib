@@ -42,7 +42,6 @@ class IRCClient:
         self.use_cap = kwargs.get('use_cap', True)
         self.use_starttls = kwargs.get('use_starttls', True)
 
-
         if any(e is None for e in (self.host, self.port)):
             raise RuntimeError('No valid host or port specified')
 
@@ -253,6 +252,7 @@ class IRCClient:
         lines = [Line(line=line) for line in lines]
 
         for line in lines:
+            self.readprint(line)
             self.call_dispatch_in(line)
 
         return lines
@@ -261,9 +261,8 @@ class IRCClient:
     """ Generator for IRC lines, e.g. non-terminating stream """
     def get_lines(self):
         while True:
-            for x in self.recv():
-                self.readprint(x)
-                line = (yield x)
+            for l in self.recv():
+                line = (yield l)
                 if line is not None:
                     self.linewrite(line)
 

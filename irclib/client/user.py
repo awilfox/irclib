@@ -16,9 +16,3 @@ class User:
 
         self.modes = network.modes[self.nick]
 
-    def userjoin(self, channel):
-        self.channels[channel.name] = channel
-
-    def userpart(self, channel):
-        del self.channels[channel.name]
-
