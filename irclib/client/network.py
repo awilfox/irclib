@@ -30,6 +30,13 @@ class IRCClientNetwork:
         self.use_ssl = kwargs.get('use_ssl', False)
         self.use_starttls = kwargs.get('use_starttls', True)
         self.hs_callback = kwargs.get('handshake_cb')
+        self.log_callback = kwargs.get('logging_cb')
+
+        if self.hs_callback is None:
+            raise RuntimeError('No valid connection handshaking in place')
+
+        if self.log_callback is None:
+            self.log_callback = lambda x, y: None
 
         if any(e is None for e in (self.host, self.port)):
             raise RuntimeError('No valid host or port specified')
@@ -62,22 +69,6 @@ class IRCClientNetwork:
         self.logger = logging.getLogger(__name__)
 
 
-    """ Pretty printing of IRC stuff outgoing
-    
-    Override this for custom logging.
-    """
-    def writeprint(self, line):
-        print('<', repr(line))
-
-
-    """ Pretty printing of IRC stuff incoming
-
-    Override this for custom logging
-    """
-    def readprint(self, line):
-        print('>', repr(line))
-
-
     """ Write a Line instance to the wire """
     def linewrite(self, line):
         # acquire the write lock
@@ -88,7 +79,7 @@ class IRCClientNetwork:
                 self.logger.debug("Cancelled event due to hook request")
                 return
 
-            self.writeprint(line)
+            self.log_callback(line, False)
             self.send(bytes(line))
 
 
@@ -165,7 +156,7 @@ class IRCClientNetwork:
         lines = [Line(line=line) for line in self.recv()]
 
         for line in lines:
-            self.readprint(line)
+            self.log_callback(line, True)
             self.call_dispatch_in(line)
 
         return lines

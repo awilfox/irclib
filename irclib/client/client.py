@@ -38,6 +38,7 @@ class IRCClient:
 
         nkwargs = copy.copy(kwargs)
         nkwargs['handshake_cb'] = self.handshake
+        nkwargs['logging_cb'] = self.irc_log
         self.network = IRCClientNetwork(**nkwargs)
 
         # Identified with nickserv
@@ -66,6 +67,16 @@ class IRCClient:
 
         # Our logger
         self.logger = logging.getLogger(__name__)
+
+
+    """ Logging callback """
+    def irc_log(self, line, recv):
+        if recv:
+            ch = '>'
+        else:
+            ch = '<'
+
+        print('{} {}'.format(ch, line))
 
 
     """ Generator for IRC lines, e.g. non-terminating stream """
