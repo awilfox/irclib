@@ -22,7 +22,7 @@ except ImportError:
 
 def randomstr():
     validstr = string.ascii_letters + string.digits
-    return ''.join([choice(validstr) for x in range(randint(3, 10))])
+    return ''.join([choice(validstr) for x in range(randint(5, 20))])
 
 
 class IRCClient:
@@ -68,7 +68,8 @@ class IRCClient:
         self.writelock = Lock()
 
         # Dispatch
-        self.dispatch_cmd = dict()
+        self.dispatch_cmd_in = dict()
+        self.dispatch_cmd_out = dict()
         self.default_dispatch()
 
         # Are we registered as a user?
@@ -95,17 +96,17 @@ class IRCClient:
     Only override this if you know what this does and what you're doing.
     """
     def default_dispatch(self):
-        self.dispatch_cmd['001'] = self.dispatch_001
-        self.dispatch_cmd['PING'] = self.dispatch_ping
-        self.dispatch_cmd['PONG'] = self.dispatch_pong
+        self.dispatch_cmd_in['001'] = self.dispatch_001
+        self.dispatch_cmd_in['PING'] = self.dispatch_ping
+        self.dispatch_cmd_in['PONG'] = self.dispatch_pong
 
         if self.use_starttls:
-            self.dispatch_cmd['670'] = self.dispatch_starttls
-            self.dispatch_cmd['691'] = self.dispatch_starttls
+            self.dispatch_cmd_in['670'] = self.dispatch_starttls
+            self.dispatch_cmd_in['691'] = self.dispatch_starttls
 
         # CAP state
         if self.use_cap:
-            self.dispatch_cmd['CAP'] = self.dispatch_cap
+            self.dispatch_cmd_in['CAP'] = self.dispatch_cap
 
             # Capabilities
             # TODO - sasl
@@ -137,7 +138,14 @@ class IRCClient:
 
     """ Write a Line instance to the wire """
     def linewrite(self, line):
+        # acquire the write lock
         with self.writelock:
+            # Call hook for this command
+            # if it returns true, cancel
+            if self.call_dispatch_out(line):
+                self.logger.debug("Cancelled event due to hook request")
+                return
+
             self.writeprint(line)
             self.send(bytes(line))
 
@@ -197,7 +205,7 @@ class IRCClient:
 
     """ Recieve data from the wire 
     
-    After buffering, call raw_receive with the lines we have.
+    After buffering, call process_in with the lines we have.
     NOTE: ONLY USE *FULL COMPLETE* LINES!
 
     Return raw_recieve to receive your processed lines after :p.
@@ -217,7 +225,7 @@ class IRCClient:
         self.__buffer = lines.pop() 
 
         if lines:
-            return self.raw_receive(lines)
+            return self.process_in(lines)
 
 
     """ Send data onto the wire """
@@ -228,18 +236,24 @@ class IRCClient:
             curlen += self.sock.send(data[curlen:])
 
 
-    """ Dispatch for a command """
-    def call_dispatch(self, line):
-        if line.command in self.dispatch_cmd:
-            self.dispatch_cmd[line.command](line)
+    """ Dispatch for a command incoming """
+    def call_dispatch_in(self, line):
+        if line.command in self.dispatch_cmd_in:
+            self.dispatch_cmd_in[line.command](line)
+
+
+    """ Dispatch for a command outgoing """
+    def call_dispatch_out(self, line):
+        if line.command in self.dispatch_cmd_out:
+            return self.dispatch_cmd_out[line.command](line)
 
 
     """ Recieve lines """
-    def raw_receive(self, lines):
+    def process_in(self, lines):
         lines = [Line(line=line) for line in lines]
 
         for line in lines:
-            self.call_dispatch(line)
+            self.call_dispatch_in(line)
 
         return lines
 

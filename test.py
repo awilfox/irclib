@@ -35,7 +35,7 @@ randomshit = [
 ]
 
 def spew(line, generator):
-    if randint(0, 24) != 0:
+    if randint(0, 14) != 0:
         return
 
     if len(line.params) <= 1: return
@@ -50,8 +50,8 @@ def spew(line, generator):
 
     generator.send(Line(command='PRIVMSG', params=(target, choice(randomshit))))
 
-n = network.IRCClient(nick='Verpel', host='okami.interlinked.me', port=6667,
-                      channels=['#alyx', '#sporks', '#irclib'])
+n = network.IRCClient(nick='Vorpel', host='okami.interlinked.me', port=6667,
+                      channels=['#alyx', '#irclib'])
 n.connect()
 
 g = n.get_lines()
