@@ -11,4 +11,5 @@ class Channel:
 
         self.modes = network.modes[self.name]
 
+        # Are we parting the channel?
         self.parting = False

@@ -9,6 +9,7 @@ from random import choice, randint
 from threading import Timer, Lock
 
 from irclib.common.line import Line
+from irclib.common.util import socketerror
 
 try:
     import ssl
@@ -16,11 +17,6 @@ except ImportError:
     warnings.warn('Could not load SSL implementation, SSL will not work!',
                   RuntimeWarning)
     ssl = None
-
-
-def randomstr():
-    validstr = string.ascii_letters + string.digits + ' '
-    return ''.join([choice(validstr) for x in range(randint(6, 24))])
 
 
 def socketerror(network, errno, errstr=None):

@@ -11,13 +11,25 @@ from threading import Timer, Lock
 
 from irclib.client.network import IRCClientNetwork
 from irclib.common.line import Line
+from irclib.common.util import randomstr
 
+""" Basic IRC client class. Takes a variety of parameters:
 
-def randomstr():
-    validstr = string.ascii_letters + string.digits
-    return ''.join([choice(validstr) for x in range(randint(5, 20))])
-
-
+    host - hostname to connect to
+    port - port to connect to
+    nick - nickname to use
+    altnick - alternate nickname
+    user - username to use (defaults to same as nick)
+    realname - GECOS to use
+    version - CTCP version reply
+    use_ssl - use SSL (default False)
+    use_starttls - use STARTTLS where available (default True)
+    password - server passwrod
+    default_channels - default places to join
+    channel_keys - key:value pair of channel keys
+    keepalive - interval to send keepalive pings (for lagcheck etc.)
+    use_cap - use CAP
+"""
 class IRCClient:
     def __init__(self, **kwargs):
         self.host = kwargs.get('host')
