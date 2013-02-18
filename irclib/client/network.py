@@ -5,9 +5,6 @@ import warnings
 import socket
 import logging
 
-from random import choice, randint
-from threading import Timer, Lock
-
 from irclib.common.line import Line
 from irclib.common.util import socketerror
 
@@ -58,9 +55,6 @@ class IRCClientNetwork:
         self.connected = False
         self.sock = None
 
-        # Locks writes
-        self.writelock = Lock()
-
         # Dispatch
         self.dispatch_cmd_in = dict()
         self.dispatch_cmd_out = dict()
@@ -71,16 +65,14 @@ class IRCClientNetwork:
 
     """ Write a Line instance to the wire """
     def linewrite(self, line):
-        # acquire the write lock
-        with self.writelock:
-            # Call hook for this command
-            # if it returns true, cancel
-            if self.call_dispatch_out(line):
-                self.logger.debug("Cancelled event due to hook request")
-                return
+        # Call hook for this command
+        # if it returns true, cancel
+        if self.call_dispatch_out(line):
+            self.logger.debug("Cancelled event due to hook request")
+            return
 
-            self.log_callback(line, False)
-            self.send(bytes(line))
+        self.log_callback(line, False)
+        self.send(bytes(line))
 
 
     """ Write a raw command to the wire """
