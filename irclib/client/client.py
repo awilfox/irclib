@@ -92,17 +92,18 @@ class IRCClient:
     Only override this if you know what this does and what you're doing.
     """
     def default_dispatch(self):
-        self.network.dispatch_cmd_in['001'] = self.dispatch_001
-        self.network.dispatch_cmd_in['PING'] = self.dispatch_ping
-        self.network.dispatch_cmd_in['PONG'] = self.dispatch_pong
+
+        self.network.add_dispatch_in('001', self.dispatch_001)
+        self.network.add_dispatch_in('PING', self.dispatch_ping)
+        self.network.add_dispatch_in('PONG', self.dispatch_pong)
 
         if self.use_starttls:
-            self.network.dispatch_cmd_in['670'] = self.dispatch_starttls
-            self.network.dispatch_cmd_in['691'] = self.dispatch_starttls
+            self.network.add_dispatch_in('670', self.dispatch_starttls)
+            self.network.add_dispatch_in('691', self.dispatch_starttls)
 
         # CAP state
         if self.use_cap:
-            self.network.dispatch_cmd_in['CAP'] = self.dispatch_cap
+            self.network.add_dispatch_in('CAP', self.dispatch_cap)
 
             # Capabilities
             # TODO - sasl
@@ -111,9 +112,6 @@ class IRCClient:
 
             if self.use_starttls:
                 self.cap_req.append('tls')
-
-            # Caps we know
-            self.supported_cap = []
 
 
     """ Reset everything """

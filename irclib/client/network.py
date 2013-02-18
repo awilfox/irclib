@@ -152,8 +152,23 @@ class IRCClientNetwork:
         if line.command in self.dispatch_cmd_out:
             return self.dispatch_cmd_out[line.command](line)
 
+    """ Add command dispatch for input
+    
+    callback function must take line as first argument
+    """
+    def add_dispatch_in(self, command, function):
+        self.dispatch_cmd_in[command] = function
 
-    """ Recieve lines """
+
+    """ Add command dispatch for output
+
+    callback function must take line as first argument
+    """
+    def add_dispatch_out(self, command, function):
+        self.dispatch_cmd_out[command] = function
+
+
+    """ Recieve and process lines """
     def process_in(self):
         if not self.connected:
             self.connect()
