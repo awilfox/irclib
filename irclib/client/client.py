@@ -6,9 +6,6 @@ import string
 import time
 import logging
 
-from random import choice, randint
-from threading import Timer, Lock
-
 from irclib.client.network import IRCClientNetwork
 from irclib.common.line import Line
 from irclib.common.util import randomstr
