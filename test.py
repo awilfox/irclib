@@ -62,11 +62,20 @@ def spew(line, generator):
 
     generator.send(Line(command='PRIVMSG', params=(target, choice(randomshit))))
 
-n = client.IRCClient(nick='Vorpel', host='okami.interlinked.me', port=6667,
-                     channels=['#alyx', '#irclib'])
 
-g = n.get_lines()
-for l in g:
-    if l.command == "PRIVMSG":
-        spew(l, g)
+def run(instance):
+    try:
+        generator = instance.get_lines()
+        for line in generator:
+            if line.command == "PRIVMSG":
+                spew(line, generator)
+    except socket.error as e:
+        print("Disconnected", str(e))
+
+
+instance = client.IRCClient(nick='Vorpel', host='okami.interlinked.me', port=6667,
+                            channels=['#alyx', '#irclib'])
+
+while True:
+    run(instance)
 
