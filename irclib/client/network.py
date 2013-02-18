@@ -19,8 +19,15 @@ except ImportError:
 
 
 def randomstr():
-    validstr = string.ascii_letters + string.digits
-    return ''.join([choice(validstr) for x in range(randint(5, 20))])
+    validstr = string.ascii_letters + string.digits + ' '
+    return ''.join([choice(validstr) for x in range(randint(6, 24))])
+
+
+def socketerror(network, errno, errstr=None):
+    network.connected = False
+    if not errstr:
+        errstr = os.strerror(errno)
+    raise socket.error(errno, errstr)
 
 
 class IRCClientNetwork:
@@ -115,11 +122,14 @@ class IRCClientNetwork:
     def recv(self):
         self.sock.settimeout(None)
         while '\r\n' not in self.__buffer:
-            data = self.sock.recv(2048)
+            try:
+                data = self.sock.recv(2048)
+            except socket.error:
+                self.connected = False
+                raise
 
             if not data:
-                raise socket.error(errno.ECONNRESET,
-                                   os.strerror(errno.ECONNRESET))
+                socketerror(self, errno)
 
             self.__buffer += data.decode('UTF-8', 'replace')
 
@@ -134,7 +144,11 @@ class IRCClientNetwork:
         sendlen = len(data)
         curlen = 0
         while curlen < sendlen:
-            curlen += self.sock.send(data[curlen:])
+            try:
+                curlen += self.sock.send(data[curlen:])
+            except socket.error:
+                self.connected = False
+                raise
 
 
     """ Dispatch for a command incoming """
