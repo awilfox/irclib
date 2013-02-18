@@ -12,6 +12,7 @@ from threading import Timer, Lock
 from irclib.client.network import IRCClientNetwork
 from irclib.common.line import Line
 from irclib.common.util import randomstr
+from irclib.common.timer import Timer
 
 """ Basic IRC client class. Takes a variety of parameters:
 
@@ -64,7 +65,6 @@ class IRCClient:
         self.default_dispatch()
 
         # Set everything up
-        self.timers = dict()
         self.reset()
 
         # Our logger
@@ -119,19 +119,6 @@ class IRCClient:
             self.supported_cap = []
 
 
-    """ Spawns a oneshot timer """
-    def timer(self, name, time, function, *args, **kwargs):
-        self.timers[name] = Timer(time, function, args=args,
-                                  kwargs=kwargs)
-        self.timers[name].start()
-
-
-    """ Cancels a timer if it has not run yet """
-    def canceltimer(self, name):
-        self.timers[name].cancel()
-        del self.timers[name]
-
-
     """ Reset everything """
     def reset(self):
         # Reset caps
@@ -145,13 +132,11 @@ class IRCClient:
         self.__last_pingtime = 0
         self.lag = 0
 
-        if len(self.timers) > 0:
-            for name, timer in self.timers.items():
-                timer.cancel()
-
-        # Timers
-        self.timers = dict()
-
+        if hasattr(self, 'timer'):
+            self.timer.cancel_all()
+        else:
+            self.timer = Timer()
+            
         # Authoriative
         self.channels = dict()
         self.users = dict()
@@ -225,7 +210,6 @@ class IRCClient:
         self.__last_pingstr = randomstr()
 
         self.network.cmdwrite('PING', [self.__last_pingstr])
-        self.timer('keepalive', self.keepalive, self.dispatch_keepalive)
 
 
     """ Dispatches keepalive message """
@@ -247,7 +231,7 @@ class IRCClient:
     """
     def dispatch_001(self, line):
         # Set up timer for lagometer
-        self.timer('keepalive', self.keepalive, self.dispatch_keepalive)
+        self.timer.add_repeat('keepalive', self.keepalive, self.dispatch_keepalive)
 
         # Do joins
         self.combine_channels(self.default_channels, self.channel_keys)
