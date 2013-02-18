@@ -23,7 +23,7 @@ setup(name=PKGNAME,
       classifiers=[
           'Development Status :: 4 - Pre-Alpha',
           'Intended Audience :: Developers',
-          'License :: OSI Approved :: BSD License',
+          'License :: WTFPL',
           'Natural Language :: English',
           'Operating System :: Microsoft',
           'Operating System :: Unix',
@@ -31,6 +31,7 @@ setup(name=PKGNAME,
           'Programming Language :: Python :: 2.7',
           'Programming Language :: Python :: 3',
           'Topic :: Internet',
+          'Topic :: Communications :: Chat :: Internet Relay Chat',
           'Topic :: Software Development :: Libraries :: Python Modules',
       ]
 )
