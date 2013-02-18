@@ -49,7 +49,8 @@ class IRCClientNetwork:
                 # Implicit SSL use
                 warnings.warn('Unable to use STARTTLS; SSL support is unavailable')
                 self.use_starttls = False
-        elif self.use_ssl:
+
+        if self.use_ssl:
             # Unneeded and probably harmful. :P
             self.use_starttls = False
 
@@ -103,7 +104,7 @@ class IRCClientNetwork:
         self.sock.connect((self.host, self.port))
         self.connected = True
 
-        if self.use_ssl:
+        if self.use_ssl and not self.use_starttls:
             self.wrap_ssl()
 
         self.hs_callback()
