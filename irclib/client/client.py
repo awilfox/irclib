@@ -47,10 +47,11 @@ class IRCClient:
         self.use_cap = kwargs.get('use_cap', True)
         self.use_starttls = kwargs.get('use_starttls', True)
 
-
+        # This is kind of a hack XXX...
         nkwargs = copy.copy(kwargs)
         nkwargs['handshake_cb'] = self.handshake
         nkwargs['logging_cb'] = self.irc_log
+        nkwargs['connreset_cb'] = self.reset
         self.network = IRCClientNetwork(**nkwargs)
 
         # Identified with nickserv
@@ -62,20 +63,9 @@ class IRCClient:
         # Default handlers
         self.default_dispatch()
 
-        # Are we registered as a user?
-        self.registered = False
-
-        # Lag stats
-        self.__last_pingstr = None
-        self.__last_pingtime = 0
-        self.lag = 0
-
-        # Timers
+        # Set everything up
         self.timers = dict()
-
-        # Authoriative
-        self.channels = dict()
-        self.users = dict()
+        self.reset()
 
         # Our logger
         self.logger = logging.getLogger(__name__)
@@ -140,6 +130,31 @@ class IRCClient:
     def canceltimer(self, name):
         self.timers[name].cancel()
         del self.timers[name]
+
+
+    """ Reset everything """
+    def reset(self):
+        # Reset caps
+        self.supported_cap = []
+
+        # Registered?
+        self.registered = False
+
+        # Lag stats
+        self.__last_pingstr = None
+        self.__last_pingtime = 0
+        self.lag = 0
+
+        if len(self.timers) > 0:
+            for name, timer in self.timers.items():
+                timer.cancel()
+
+        # Timers
+        self.timers = dict()
+
+        # Authoriative
+        self.channels = dict()
+        self.users = dict()
 
 
     """ Write the user/nick line """

@@ -34,12 +34,16 @@ class IRCClientNetwork:
         self.use_starttls = kwargs.get('use_starttls', True)
         self.hs_callback = kwargs.get('handshake_cb')
         self.log_callback = kwargs.get('logging_cb')
+        self.reset_callback = kwargs.get('connreset_cb')
 
         if self.hs_callback is None:
             raise RuntimeError('No valid connection handshaking in place')
 
         if self.log_callback is None:
             self.log_callback = lambda x, y: None
+
+        if self.reset_callback is None:
+            self.reset_callback = lambda: None
 
         if any(e is None for e in (self.host, self.port)):
             raise RuntimeError('No valid host or port specified')
@@ -56,10 +60,9 @@ class IRCClientNetwork:
             # Unneeded and probably harmful. :P
             self.use_starttls = False
 
-        self.__buffer = ''
-
-        self.sock = socket.socket()
+        # Connection flag
         self.connected = False
+        self.sock = None
 
         # Locks writes
         self.writelock = Lock()
@@ -97,6 +100,11 @@ class IRCClientNetwork:
     Note gevent will not be pleased if you do not have a timeout.
     """
     def connect(self, timeout=10):
+        if not self.connected:
+            self.sock = socket.socket()
+            self.__buffer = ''
+            self.reset_callback()
+
         if timeout is not None:
             self.sock.settimeout(timeout)
         self.sock.connect((self.host, self.port))
