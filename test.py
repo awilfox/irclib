@@ -69,7 +69,7 @@ def run(instance):
         for line in generator:
             if line.command == "PRIVMSG":
                 spew(line, generator)
-    except socket.error as e:
+    except IOError as e:
         print("Disconnected", str(e))
 
 

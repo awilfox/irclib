@@ -19,13 +19,6 @@ except ImportError:
     ssl = None
 
 
-def socketerror(network, errno, errstr=None):
-    network.connected = False
-    if not errstr:
-        errstr = os.strerror(errno)
-    raise socket.error(errno, errstr)
-
-
 class IRCClientNetwork:
     def __init__(self, **kwargs):
         self.host = kwargs.get('host')
@@ -133,7 +126,7 @@ class IRCClientNetwork:
                 raise
 
             if not data:
-                socketerror(self, errno)
+                socketerror(errno.ECONNRESET, instance=self)
 
             self.__buffer += data.decode('UTF-8', 'replace')
 
