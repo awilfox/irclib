@@ -21,7 +21,7 @@ setup(name=PKGNAME,
       keywords=['irc', 'protocol'],
       packages=find_packages(),
       classifiers=[
-          'Development Status :: 4 - Pre-Alpha',
+          'Development Status :: 2 - Pre-Alpha',
           'Intended Audience :: Developers',
           'License :: WTFPL',
           'Natural Language :: English',
