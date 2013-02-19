@@ -1,8 +1,7 @@
 from collections import defaultdict, namedtuple
 
 class Dispatcher:
-    DispatchItem = namedtuple('dispatchitem',
-                              'priority uid function args kwargs')
+    DispatchItem = namedtuple('dispatchitem', 'priority uid function')
 
 
     def __init__(self):
@@ -14,8 +13,8 @@ class Dispatcher:
         self.uid = 0
 
 
-    def add(self, name, priority, function, args=[], kwargs={}):
-        item = self.DispatchItem(priority, self.uid, function, args, kwargs)
+    def add(self, name, priority, function):
+        item = self.DispatchItem(priority, self.uid, function)
         self.dispatch[name].append(item)
 
         # ok unless there's lots (e.g. 10,000+) dispatches
@@ -59,13 +58,17 @@ class Dispatcher:
             del self.dispatch[name]
 
 
-    def run(self, name):
+    def has_name(self, name):
+        return name in self.dispatch
+
+
+    def run(self, name, args=[], kwargs={}):
         if name not in self.dispatch:
             raise ValueError("No such hook name")
 
         ret = list()
         for item in self.dispatch[name]:
-            retval = item.function(*item.args, **item.kwargs)
+            retval = item.function(*args, **kwargs)
             ret.append((item.function, retval))
 
         return ret
