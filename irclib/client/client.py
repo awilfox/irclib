@@ -7,6 +7,7 @@ import time
 import logging
 
 from irclib.client.network import IRCClientNetwork
+from irclib.common.numerics import *
 from irclib.common.line import Line
 from irclib.common.util import randomstr
 from irclib.common.timer import Timer
@@ -93,13 +94,13 @@ class IRCClient:
     """
     def default_dispatch(self):
 
-        self.network.add_dispatch_in('001', self.dispatch_001)
+        self.network.add_dispatch_in(RPL_WELCOME, self.dispatch_welcome)
         self.network.add_dispatch_in('PING', self.dispatch_ping)
         self.network.add_dispatch_in('PONG', self.dispatch_pong)
 
         if self.use_starttls:
-            self.network.add_dispatch_in('670', self.dispatch_starttls)
-            self.network.add_dispatch_in('691', self.dispatch_starttls)
+            self.network.add_dispatch_in(RPL_STARTTLS, self.dispatch_starttls)
+            self.network.add_dispatch_in(ERR_STARTTLS, self.dispatch_starttls)
 
         # CAP state
         if self.use_cap:
@@ -176,13 +177,13 @@ class IRCClient:
 
     """ Dispatch STARTTLS """
     def dispatch_starttls(self, line):
-        if line.command == '670':
+        if line.command == RPL_STARTTLS:
             # Wrap the socket
             self.network.wrap_ssl()
 
             # Now safe to do this
             self.dispatch_register()
-        elif line.command == '691':
+        elif line.command == ERR_STARTTLS:
             # Failed somehow.
             self.use_ssl = False
             self.logger.critical('SSL is non-functional on this connection!')
@@ -224,7 +225,7 @@ class IRCClient:
     
     The default does joins and such
     """
-    def dispatch_001(self, line):
+    def dispatch_welcome(self, line):
         # Set up timer for lagometer
         self.timer.add_repeat('keepalive', self.keepalive, self.dispatch_keepalive)
 

@@ -22,6 +22,9 @@ class IRCClientNetwork:
         self.port = kwargs.get('port')
         self.use_ssl = kwargs.get('use_ssl', False)
         self.use_starttls = kwargs.get('use_starttls', True)
+
+        # XXX these are hacks. Good enough for now but I hate it.
+        # Probably should use inheritance or some such.
         self.hs_callback = kwargs.get('handshake_cb')
         self.log_callback = kwargs.get('logging_cb')
         self.reset_callback = kwargs.get('connreset_cb')
