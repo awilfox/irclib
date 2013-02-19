@@ -94,17 +94,17 @@ class IRCClient:
     """
     def default_dispatch(self):
 
-        self.network.add_dispatch_in(RPL_WELCOME, self.dispatch_welcome)
-        self.network.add_dispatch_in('PING', self.dispatch_ping)
-        self.network.add_dispatch_in('PONG', self.dispatch_pong)
+        self.network.add_dispatch_in(RPL_WELCOME, 0, self.dispatch_welcome)
+        self.network.add_dispatch_in('PING', 0, self.dispatch_ping)
+        self.network.add_dispatch_in('PONG', 0, self.dispatch_pong)
 
         if self.use_starttls:
-            self.network.add_dispatch_in(RPL_STARTTLS, self.dispatch_starttls)
-            self.network.add_dispatch_in(ERR_STARTTLS, self.dispatch_starttls)
+            self.network.add_dispatch_in(RPL_STARTTLS, 0, self.dispatch_starttls)
+            self.network.add_dispatch_in(ERR_STARTTLS, 0, self.dispatch_starttls)
 
         # CAP state
         if self.use_cap:
-            self.network.add_dispatch_in('CAP', self.dispatch_cap)
+            self.network.add_dispatch_in('CAP', 0, self.dispatch_cap)
 
             # Capabilities
             # TODO - sasl

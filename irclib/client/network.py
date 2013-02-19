@@ -5,6 +5,7 @@ import warnings
 import socket
 import logging
 
+from irclib.common.dispatch import Dispatcher
 from irclib.common.line import Line
 from irclib.common.util import socketerror
 
@@ -59,8 +60,8 @@ class IRCClientNetwork:
         self.sock = None
 
         # Dispatch
-        self.dispatch_cmd_in = dict()
-        self.dispatch_cmd_out = dict()
+        self.dispatch_cmd_in = Dispatcher()
+        self.dispatch_cmd_out = Dispatcher()
 
         # Our logger
         self.logger = logging.getLogger(__name__)
@@ -70,7 +71,8 @@ class IRCClientNetwork:
     def linewrite(self, line):
         # Call hook for this command
         # if it returns true, cancel
-        if self.call_dispatch_out(line):
+        ret = self.call_dispatch_out(line)
+        if any(x[1] for x in ret):
             self.logger.debug("Cancelled event due to hook request")
             return
 
@@ -146,29 +148,33 @@ class IRCClientNetwork:
 
     """ Dispatch for a command incoming """
     def call_dispatch_in(self, line):
-        if line.command in self.dispatch_cmd_in:
-            self.dispatch_cmd_in[line.command](line)
+        if self.dispatch_cmd_in.has_name(line.command):
+            return self.dispatch_cmd_in.run(line.command, [line])
+        else:
+            return [(None, None)]
 
 
     """ Dispatch for a command outgoing """
     def call_dispatch_out(self, line):
-        if line.command in self.dispatch_cmd_out:
-            return self.dispatch_cmd_out[line.command](line)
+        if self.dispatch_cmd_out.has_name(line.command):
+            return self.dispatch_cmd_out(line.command, [line])
+        else:
+            return [(None, None)]
 
     """ Add command dispatch for input
     
     callback function must take line as first argument
     """
-    def add_dispatch_in(self, command, function):
-        self.dispatch_cmd_in[command] = function
+    def add_dispatch_in(self, command, priority, function):
+        self.dispatch_cmd_in.add(command, priority, function)
 
 
     """ Add command dispatch for output
 
     callback function must take line as first argument
     """
-    def add_dispatch_out(self, command, function):
-        self.dispatch_cmd_out[command] = function
+    def add_dispatch_out(self, command, priority, function):
+        self.dispatch_cmd_out.add(command, priority, function)
 
 
     """ Recieve and process lines """
