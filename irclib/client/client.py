@@ -88,6 +88,16 @@ class IRCClient:
                     self.linewrite(line)
 
 
+    """ Write a Line instance to the wire """
+    def linewrite(self, line):
+        self.network.linewrite(line)
+
+
+    """ Write a raw command to the wire """
+    def cmdwrite(self, command, params=[]):
+        self.network.cmdwrite(command, params)
+
+
     """ Create default dispatches
     
     Only override this if you know what this does and what you're doing.
