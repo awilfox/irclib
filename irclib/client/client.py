@@ -79,6 +79,11 @@ class IRCClient:
         print('{} {}'.format(ch, line))
 
 
+    """ Alternative method for gathering lines (process in batches) """
+    def process_in(self):
+        return self.network.process_in()
+
+
     """ Generator for IRC lines, e.g. non-terminating stream """
     def get_lines(self):
         while True:
