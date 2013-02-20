@@ -70,8 +70,12 @@ class IRCClientNetwork:
     """ Write a Line instance to the wire """
     def linewrite(self, line):
         # Call hook for this command
-        # if it returns true, cancel
-        ret = self.call_dispatch_out(line)
+        # Also call the hook matching all commands (None)
+        # if any return true, cancel
+        ret = list()
+        ret.extend(self.call_dispatch_out(line))
+        ret.extend(self.call_dispatch_out(None))
+
         if any(x[1] for x in ret):
             self.logger.debug("Cancelled event due to hook request")
             return
@@ -148,18 +152,27 @@ class IRCClientNetwork:
 
     """ Dispatch for a command incoming """
     def call_dispatch_in(self, line):
-        if self.dispatch_cmd_in.has_name(line.command):
-            return self.dispatch_cmd_in.run(line.command, [line])
+        if line is None:
+            if self.dispatch_cmd_out.has_name(None):
+                return self.dispatch_cmd_out(None)
         else:
-            return [(None, None)]
+            if self.dispatch_cmd_in.has_name(line.command):
+                return self.dispatch_cmd_in.run(line.command, [line])
+
+        return [(None, None)]
 
 
     """ Dispatch for a command outgoing """
     def call_dispatch_out(self, line):
-        if self.dispatch_cmd_out.has_name(line.command):
-            return self.dispatch_cmd_out(line.command, [line])
+        if line is None:
+            if self.dispatch_cmd_out.has_name(None):
+                return self.dispatch_cmd_out(None)
         else:
-            return [(None, None)]
+            if self.dispatch_cmd_out.has_name(line.command):
+                return self.dispatch_cmd_out(line.command, [line])
+        
+        return [(None, None)]
+
 
     """ Add command dispatch for input
     
@@ -172,6 +185,8 @@ class IRCClientNetwork:
     """ Add command dispatch for output
 
     callback function must take line as first argument
+
+    for a wildcard callback, use None as your command (as in type(None))
     """
     def add_dispatch_out(self, command, priority, function):
         self.dispatch_cmd_out.add(command, priority, function)
