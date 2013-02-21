@@ -7,15 +7,23 @@ flexibility whilst supporting major extensions built-in and many features that
 users might consider desirable, such as user tracking.
 
 This bot has been designed largely with IRCv3.1 in mind (http://ircv3.org).
-No features of IRCv3.2 are mostly not yet implemented yet (some limited parsing
-ability exists for message tags) but probably will be at some indeterminate
-point.
+Features of IRCv3.2 are mostly unimplemented (some limited parsing ability
+exists for message tags) but probably will be at some indeterminate point.
+
+The library presently supports the following:
+- STARTTLS
+- Message tags (only removing them and storing them, no parsing)
+- SASL, PLAIN auth only right now (yes, it works correctly with STARTTLS)
+- CAP (follows from SASL and STARTTLS)
+- Server passwords (you'd be surprised how many don't support this...)
+- Timers (timed events)
+- Dynamic dispatch
 
 2) Design
 IRCLib is primarily designed with blocking I/O in mind, as that is the simplest
 paradigm to program for (and most common), and things like gevent exist. It
 should not be too difficult to force the bot to use a non-blocking mode of
-operation with custom send/recv methods.
+operation with custom send/recv methods; prod around in IRCClientNetwork.
 
 The Python threading.Timer module is used but can be easily swapped for any
 other form of asynchronous timers.
@@ -33,3 +41,4 @@ Try irc.interlinked.me #irclib. :)
 Licensed under the WTFPL; terms and conditions can be found at:
 
 	http://www.wtfpl.net/about/
+
