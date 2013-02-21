@@ -4,6 +4,7 @@ import errno
 import warnings
 import socket
 import logging
+from abc import ABCMeta, abstractmethod
 
 from irclib.common.dispatch import Dispatcher
 from irclib.common.line import Line
@@ -17,27 +18,12 @@ except ImportError:
     ssl = None
 
 
-class IRCClientNetwork:
+class IRCClientNetwork(metaclass=ABCMeta):
     def __init__(self, **kwargs):
         self.host = kwargs.get('host')
         self.port = kwargs.get('port')
         self.use_ssl = kwargs.get('use_ssl', False)
         self.use_starttls = kwargs.get('use_starttls', True)
-
-        # XXX these are hacks. Good enough for now but I hate it.
-        # Probably should use inheritance or some such.
-        self.hs_callback = kwargs.get('handshake_cb')
-        self.log_callback = kwargs.get('logging_cb')
-        self.reset_callback = kwargs.get('connreset_cb')
-
-        if self.hs_callback is None:
-            raise RuntimeError('No valid connection handshaking in place')
-
-        if self.log_callback is None:
-            self.log_callback = lambda x, y: None
-
-        if self.reset_callback is None:
-            self.reset_callback = lambda: None
 
         if any(e is None for e in (self.host, self.port)):
             raise RuntimeError('No valid host or port specified')
@@ -65,6 +51,18 @@ class IRCClientNetwork:
 
         # Our logger
         self.logger = logging.getLogger(__name__)
+
+
+    """ Default connection reset method """
+    @abstractmethod
+    def reset(self):
+        pass
+
+
+    """ Default logging callback """
+    @abstractmethod
+    def log_callback(self, line, recv):
+        pass
 
 
     """ Write a Line instance to the wire """
@@ -98,7 +96,7 @@ class IRCClientNetwork:
         if not self.connected:
             self.sock = socket.socket()
             self.__buffer = ''
-            self.reset_callback()
+            self.reset()
 
         if timeout is not None:
             self.sock.settimeout(timeout)
@@ -107,8 +105,6 @@ class IRCClientNetwork:
 
         if self.use_ssl and not self.use_starttls:
             self.wrap_ssl()
-
-        self.hs_callback()
 
 
     """ Wrap the socket in SSL """
