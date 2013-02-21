@@ -73,9 +73,17 @@ def run(instance):
         print("Disconnected", str(e))
 
 
-instance = client.IRCClient(nick='Vorpel', host='okami.interlinked.me', port=6667,
-                            channels=['#alyx', '#irclib'], use_sasl=True,
-                            sasl_username='Vorpel', sasl_pw='changeme')
+kwargs = {
+    'nick' : 'Vorpel',
+    'host' : 'okami.interlinked.me',
+    'port' : 6667,
+    'channels' : ['#irclib'],
+    'use_sasl' : True,
+    'sasl_username' : 'Vorpel',
+    'sasl_pw' : 'changeme',
+}
+
+instance = client.IRCClient(**kwargs)
 
 while True:
     run(instance)
