@@ -14,7 +14,10 @@ from irclib.common.line import Line
 from irclib.common.util import randomstr
 from irclib.common.timer import Timer
 
-""" Basic IRC client class. Takes a variety of parameters:
+""" Basic IRC client class. """
+class IRCClient(IRCClientNetwork):
+    """
+    Creates an instance of IRCClient
 
     host - hostname to connect to
     port - port to connect to
@@ -30,10 +33,10 @@ from irclib.common.timer import Timer
     channel_keys - key:value pair of channel keys
     keepalive - interval to send keepalive pings (for lagcheck etc.)
     use_cap - use CAP
-"""
-class IRCClient(IRCClientNetwork):
+    """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
         self.nick = kwargs.get('nick', 'irclib')
         self.altnick = kwargs.get('altnick', 'irclib_')
         self.user = kwargs.get('user', self.nick)
@@ -80,6 +83,38 @@ class IRCClient(IRCClientNetwork):
 
         # Set everything up
         self.reset()
+
+
+    """ Default oneshot timer implementation """
+    def timer_oneshot(self, name, time, function):
+        if not hasattr(self, '_timer'):
+            self._timer = Timer()
+
+        return self._timer.add_oneshot(name, time, function)
+
+
+    """ Default recurring timer implementation """
+    def timer_repeat(self, name, time, function):
+        if not hasattr(self, '_timer'):
+            self._timer = Timer()
+
+        return self._timer.add_repeat(name, time, function)
+
+
+    """ Default cancellation function for timers """
+    def timer_cancel(self, name):
+        if not hasattr(self, '_timer'):
+            raise ValueError('No timers added!')
+
+        return self._timer.cancel(name)
+
+    
+    """ Default cancellation function for all timers """
+    def timer_cancel_all(self):
+        if not hasattr(self, '_timer'):
+            raise ValueError('No timers added!')
+
+        return self._timer.cancel_all()
 
 
     """ Logging callback """
@@ -152,11 +187,11 @@ class IRCClient(IRCClientNetwork):
         self.__last_pingtime = 0
         self.lag = 0
 
-        if hasattr(self, 'timer'):
-            self.timer.cancel_all()
-        else:
-            self.timer = Timer()
-            
+        try:
+            self.timer_cancel_all()
+        except ValueError:
+            pass
+
         # Authoriative
         self.channels = dict()
         self.users = dict()
@@ -180,8 +215,7 @@ class IRCClient(IRCClientNetwork):
                 self.cmdwrite('AUTHENTICATE', ['PLAIN'])
 
                 # Abort SASL after some time
-                self.timer.add_oneshot('cap_terminate', 15,
-                                       self.terminate_cap)
+                self.timer_oneshot('cap_terminate', 15, self.terminate_cap)
 
 
     """ Start initial handshake """
@@ -196,15 +230,14 @@ class IRCClient(IRCClientNetwork):
             self.cmdwrite('CAP', ['REQ', ' '.join(self.cap_req)])
 
             # Cancel CAP after some time
-            self.timer.add_oneshot('cap_terminate', 15,
-                                   self.terminate_cap)
+            self.timer_oneshot('cap_terminate', 15, self.terminate_cap)
 
 
     """ Dispatches CAP stuff """
     def dispatch_cap(self, line):
         if line.params[1] == 'ACK':
             # Cancel
-            self.timer.cancel('cap_terminate')
+            self.timer_cancel('cap_terminate')
 
             # Caps follow
             self.supported_cap = line.params[-1].lower().split()
@@ -240,7 +273,7 @@ class IRCClient(IRCClientNetwork):
 
     """ Dispatch SASL """
     def dispatch_sasl(self, line):
-        self.timer.cancel('cap_terminate')
+        self.timer_cancel('cap_terminate')
 
         if line.command == 'AUTHENTICATE':
             # We got an authentication message?
@@ -252,7 +285,7 @@ class IRCClient(IRCClientNetwork):
                 self.cmdwrite('AUTHENTICATE', [self.__sasl_send])
 
                 # Timeout authentication
-                self.timer.add_oneshot('cap_terminate', 15, self.terminate_cap)
+                self.timer_oneshot('cap_terminate', 15, self.terminate_cap)
         elif line.command == RPL_LOGGEDIN:
             # SASL auth succeeded
             self.identified = True
@@ -305,7 +338,7 @@ class IRCClient(IRCClientNetwork):
     """
     def dispatch_welcome(self, line):
         # Set up timer for lagometer
-        self.timer.add_repeat('keepalive', self.keepalive, self.dispatch_keepalive)
+        self.timer_repeat('keepalive', self.keepalive, self.dispatch_keepalive)
 
         # Do joins
         self.combine_channels(self.default_channels, self.channel_keys)
