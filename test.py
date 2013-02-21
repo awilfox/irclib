@@ -74,7 +74,8 @@ def run(instance):
 
 
 instance = client.IRCClient(nick='Vorpel', host='okami.interlinked.me', port=6667,
-                            channels=['#alyx', '#irclib'])
+                            channels=['#alyx', '#irclib'], use_sasl=True,
+                            sasl_username='Vorpel', sasl_pw='changeme')
 
 while True:
     run(instance)

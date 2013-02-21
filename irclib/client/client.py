@@ -5,9 +5,11 @@ import warnings
 import string
 import time
 import logging
+import base64
 
 from irclib.client.network import IRCClientNetwork
 from irclib.common.numerics import *
+from irclib.common.dispatch import Dispatcher
 from irclib.common.line import Line
 from irclib.common.util import randomstr
 from irclib.common.timer import Timer
@@ -45,6 +47,28 @@ class IRCClient:
         self.keepalive = kwargs.get('keepalive', 15)
         self.use_cap = kwargs.get('use_cap', True)
         self.use_starttls = kwargs.get('use_starttls', True)
+        self.use_sasl = kwargs.get('use_sasl', False)
+        self.sasl_username = kwargs.get('sasl_username', None)
+        self.sasl_pw = kwargs.get('sasl_pw', None)
+
+        self.logger = logging.getLogger(__name__)
+
+        if self.use_sasl and (not self.sasl_pw or not self.sasl_username):
+            self.logger.warn("Unable to use SASL, no username/password provided")
+            self.use_sasl = False
+        elif self.use_sasl:
+            send = '{acct}\0{acct}\0{pw}'.format(acct=self.sasl_username,
+                                                 pw=self.sasl_pw)
+            send = base64.b64encode(send.encode('UTF-8'))
+            if len(send) > 300:
+                self.logger.error("Cannot SASL authenticate, pw too long")
+                self.use_sasl = False
+            else:
+                self.__sasl_send = send.decode('ascii')
+
+        if (self.use_sasl or self.use_starttls) and not self.use_cap:
+            warnings.warn("Enabling CAP because starttls and/or sasl requested")
+            self.use_cap = True
 
         # This is kind of a hack XXX...
         nkwargs = copy.copy(kwargs)
@@ -64,9 +88,6 @@ class IRCClient:
 
         # Set everything up
         self.reset()
-
-        # Our logger
-        self.logger = logging.getLogger(__name__)
 
 
     """ Logging callback """
@@ -108,7 +129,6 @@ class IRCClient:
     Only override this if you know what this does and what you're doing.
     """
     def default_dispatch(self):
-
         self.network.add_dispatch_in(RPL_WELCOME, 0, self.dispatch_welcome)
         self.network.add_dispatch_in('PING', 0, self.dispatch_ping)
         self.network.add_dispatch_in('PONG', 0, self.dispatch_pong)
@@ -117,17 +137,26 @@ class IRCClient:
             self.network.add_dispatch_in(RPL_STARTTLS, 0, self.dispatch_starttls)
             self.network.add_dispatch_in(ERR_STARTTLS, 0, self.dispatch_starttls)
 
+        if self.use_sasl:
+            self.network.add_dispatch_in('AUTHENTICATE', 0, self.dispatch_sasl)
+            self.network.add_dispatch_in(RPL_LOGGEDIN, 0, self.dispatch_sasl)
+            self.network.add_dispatch_in(RPL_SASLSUCCESS, 0, self.dispatch_sasl)
+            self.network.add_dispatch_in(ERR_SASLFAIL, 0, self.dispatch_sasl)
+            self.network.add_dispatch_in(ERR_SASLTOOLONG, 0, self.dispatch_sasl)
+
         # CAP state
         if self.use_cap:
             self.network.add_dispatch_in('CAP', 0, self.dispatch_cap)
 
             # Capabilities
-            # TODO - sasl
             self.cap_req = ['multi-prefix', 'account-notify',
                             'away-notify', 'extended-join']
 
             if self.use_starttls:
                 self.cap_req.append('tls')
+
+            if self.use_sasl:
+                self.cap_req.append('sasl')
 
 
     """ Reset everything """
@@ -137,6 +166,9 @@ class IRCClient:
 
         # Registered?
         self.registered = False
+
+        # Identified?
+        self.identified = False
 
         # Lag stats
         self.__last_pingstr = None
@@ -156,39 +188,59 @@ class IRCClient:
     """ Write the user/nick line """
     def dispatch_register(self):
         if not self.registered:
-            self.network.cmdwrite('USER', [self.user, '*', '8', self.realname])
-            self.network.cmdwrite('NICK', [self.nick])
+            self.cmdwrite('USER', [self.user, '+iw', self.host, self.realname])
+            self.cmdwrite('NICK', [self.nick])
+
+            if self.password:
+                self.cmdwrite('PASS', [self.password])
+
             self.registered = True
 
-            # TODO - sasl!
+            # End of CAP if we're not using SASL
+            if self.use_cap and not self.use_sasl:
+                self.terminate_cap()
+            elif self.use_sasl and 'sasl' in self.supported_cap:
+                self.cmdwrite('AUTHENTICATE', ['PLAIN'])
+
+                # Abort SASL after some time
+                self.timer.add_oneshot('cap_terminate', 15,
+                                       self.terminate_cap)
 
 
     """ Start initial handshake """
     def handshake(self):
-        if not self.use_starttls or not self.use_cap:
+        if not self.use_cap:
+            # Not using CAP :(
             self.dispatch_register()
         elif self.use_cap:
             # Request caps
-            self.network.cmdwrite('CAP', ['REQ', ' '.join(self.cap_req)])
+            self.cmdwrite('CAP', ['REQ', ' '.join(self.cap_req)])
+
+            # Cancel CAP after some time
+            self.timer.add_oneshot('cap_terminate', 15,
+                                   self.terminate_cap)
 
 
     """ Dispatches CAP stuff """
     def dispatch_cap(self, line):
         if line.params[1] == 'ACK':
+            # Cancel
+            self.timer.cancel('cap_terminate')
+
             # Caps follow
             self.supported_cap = line.params[-1].lower().split()
             
-            # End negotiation
-            self.network.cmdwrite('CAP', ['END'])
-
             if 'tls' in self.supported_cap and self.use_starttls and not self.use_ssl:
                 # Start TLS negotiation
-                self.network.cmdwrite('STARTTLS')
-
+                self.cmdwrite('STARTTLS')
             else:
                 # Register only if we don't need STARTTLS
                 self.dispatch_register()
 
+
+    """ Terminate CAP """
+    def terminate_cap(self):
+        self.cmdwrite('CAP', ['END'])
 
     """ Dispatch STARTTLS """
     def dispatch_starttls(self, line):
@@ -207,9 +259,41 @@ class IRCClient:
             pass
 
 
+    """ Dispatch SASL """
+    def dispatch_sasl(self, line):
+        self.timer.cancel('cap_terminate')
+
+        if line.command == 'AUTHENTICATE':
+            # We got an authentication message?
+            if line.params[0] != '+':
+                self.logger.warn('Unexpected response from SASL auth agent, '
+                                 'continuing')
+
+            if not self.identified:
+                self.cmdwrite('AUTHENTICATE', [self.__sasl_send])
+
+                # Timeout authentication
+                self.timer.add_oneshot('cap_terminate', 15, self.terminate_cap)
+        elif line.command == RPL_LOGGEDIN:
+            # SASL auth succeeded
+            self.identified = True
+        elif line.command == RPL_SASLSUCCESS:
+            # end CAP
+            self.terminate_cap()
+        elif line.command in (ERR_SASLFAIL, ERR_SASLTOOLONG):
+            # SASL failed
+            self.logger.error('SASL auth failed! Error: {} {}'.format(
+                              line.command,
+                              line.params[-1]))
+            self.terminate_cap()
+        else:
+            self.logger.debug('No handler for SASL numeric {}'.format(
+                              line.command))
+
+
     """ Generic dispatcher for ping """
     def dispatch_ping(self, line):
-        self.network.cmdwrite('PONG', line.params)
+        self.cmdwrite('PONG', line.params)
 
 
     """ Sends a keepalive message """
@@ -220,7 +304,7 @@ class IRCClient:
         self.__last_pingtime = time.time()
         self.__last_pingstr = randomstr()
 
-        self.network.cmdwrite('PING', [self.__last_pingstr])
+        self.cmdwrite('PING', [self.__last_pingstr])
 
 
     """ Dispatches keepalive message """
@@ -289,4 +373,4 @@ class IRCClient:
 
         for buf in sbuf:
             channels, keys = ','.join(buf[0]), ' '.join(buf[1])
-            self.network.cmdwrite('JOIN', (channels, keys))
+            self.cmdwrite('JOIN', (channels, keys))
