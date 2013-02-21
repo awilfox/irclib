@@ -63,13 +63,20 @@ class Timer:
 
     """ Cancel a timer """
     def cancel(self, name):
-        timer = self.timers[name].timer
-        timer.cancel()
-        del self.timers[name]
+        try:
+            timer = self.timers[name].timer
+            timer.cancel()
+            del self.timers[name]
+        except KeyError:
+            return True
 
 
     """ Cancel all timers """
     def cancel_all(self):
         for name, timer in self.timers.items():
             timer.timer.cancel()
+            try:
+                del self.timers[name]
+            except KeyError:
+                pass
 
