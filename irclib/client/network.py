@@ -113,6 +113,8 @@ class IRCClientNetwork:
 
     """ Wrap the socket in SSL """
     def wrap_ssl(self):
+        if self.connected:
+            self.logger.info("Beginning SSL wrapping")
         self.sock = ssl.wrap_socket(self.sock)
         self.use_ssl = True
 
