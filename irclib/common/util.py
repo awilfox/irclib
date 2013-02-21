@@ -5,7 +5,7 @@ from socket import error as SocketError
 
 """ Generate a random string """
 def randomstr(minlen=6, maxlen=30):
-    validstr = string.ascii_letters + string.digits + ' '
+    validstr = ascii_letters + digits + ' '
     return ''.join([choice(validstr) for x in range(randint(minlen, maxlen))])
 
 
