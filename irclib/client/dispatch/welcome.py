@@ -35,3 +35,4 @@ def dispatch_welcome(client, line):
 hooks_in = ( 
     (RPL_WELCOME, 0, dispatch_welcome),
 )
+

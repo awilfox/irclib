@@ -1,3 +1,5 @@
+from time import time
+
 """ Generic dispatcher for ping """
 def dispatch_ping(client, line):
     client.cmdwrite('PONG', line.params)
@@ -12,7 +14,7 @@ def dispatch_pong(client, line):
         return
 
     client._last_pingstr = None
-    client.lag = time.time() - client._last_pingtime
+    client.lag = time() - client._last_pingtime
     client.logger.info('LAG: {}'.format(client.lag))
 
 
