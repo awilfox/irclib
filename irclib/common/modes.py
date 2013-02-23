@@ -89,7 +89,10 @@ class ModeSet:
         if mode in chain(self.p_list, self.p_prefix):
             return self.del_listmode(mode, param)
 
-        del self.modes[mode]
+        try:
+            del self.modes[mode]
+        except:
+            pass
 
 
     """ Set a mode """
@@ -115,7 +118,6 @@ class ModeSet:
         pindex = 0
         plen = len(params)
         for mode in modes:
-            print(mode)
             if mode == '+':
                 adding = True
             elif mode == '-':
