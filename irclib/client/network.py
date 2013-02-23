@@ -151,8 +151,8 @@ class IRCClientNetwork(metaclass=ABCMeta):
     """ Dispatch for a command incoming """
     def call_dispatch_in(self, line):
         if line is None:
-            if self.dispatch_cmd_out.has_name(None):
-                return self.dispatch_cmd_out(None)
+            if self.dispatch_cmd_in.has_name(None):
+                return self.dispatch_cmd_in(None)
         else:
             if self.dispatch_cmd_in.has_name(line.command):
                 return self.dispatch_cmd_in.run(line.command, [line])
@@ -167,7 +167,7 @@ class IRCClientNetwork(metaclass=ABCMeta):
                 return self.dispatch_cmd_out(None)
         else:
             if self.dispatch_cmd_out.has_name(line.command):
-                return self.dispatch_cmd_out(line.command, [line])
+                return self.dispatch_cmd_out.run(line.command, [line])
         
         return [(None, None)]
 
