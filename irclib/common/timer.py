@@ -75,8 +75,6 @@ class Timer:
     def cancel_all(self):
         for name, timer in self.timers.items():
             timer.timer.cancel()
-            try:
-                del self.timers[name]
-            except KeyError:
-                pass
+
+        self.timers = dict() 
 
