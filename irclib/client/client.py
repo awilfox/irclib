@@ -62,11 +62,7 @@ class IRCClient(IRCClientNetwork):
             send = '{acct}\0{acct}\0{pw}'.format(acct=self.sasl_username,
                                                  pw=self.sasl_pw)
             send = base64.b64encode(send.encode('UTF-8'))
-            if len(send) > 300:
-                self.logger.error("Cannot SASL authenticate, pw too long")
-                self.use_sasl = False
-            else:
-                self.__sasl_send = send.decode('ascii')
+            self.__sasl_send = send.decode('ascii')
 
         if (self.use_sasl or self.use_starttls) and not self.use_cap:
             warnings.warn("Enabling CAP because starttls and/or sasl requested")
@@ -282,7 +278,15 @@ class IRCClient(IRCClientNetwork):
                                  'continuing')
 
             if not self.identified:
-                self.cmdwrite('AUTHENTICATE', [self.__sasl_send])
+                # Separate into 400 byte chunks
+                send = self.__sasl_send
+                split = [send[i:i+400] for i in range(0, len(send), 400)]
+                for s in split:
+                    self.cmdwrite('AUTHENTICATE', [s])
+
+                # Padding, if needed
+                if len(split[-1]) == 400:
+                    self.cmdwrite('AUTHENTICATE', ['+'])
 
                 # Timeout authentication
                 self.timer_oneshot('cap_terminate', 15, self.terminate_cap)
