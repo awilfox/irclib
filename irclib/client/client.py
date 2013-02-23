@@ -47,6 +47,7 @@ class IRCClient(IRCClientNetwork):
         self.sasl_pw = kwargs.get('sasl_pw', None)
         self.autorejoin = kwargs.get('kick_autorejoin', False)
         self.autorejoin_wait = kwargs.get('kick_wait', 5)
+        self.custom_dispatch = kwargs.get('custom_dispatch', [])
 
         if self.use_sasl and (not self.sasl_pw or not self.sasl_username):
             self.logger.warn("Unable to use SASL, no username/password provided")
@@ -160,12 +161,8 @@ class IRCClient(IRCClientNetwork):
             if self.use_sasl:
                 self.cap_req.append('sasl')
 
-        
-        # Begin the imports
-        for module in dispatchers:
-            module = 'irclib.client.dispatch.{}'.format(module)
+        def module_add_hooks(module):
             imp = importlib.import_module(module)
-
             if hasattr(imp, 'hooks_in'):
                 for hook in imp.hooks_in:
                     self.add_dispatch_in(*hook)
@@ -173,6 +170,15 @@ class IRCClient(IRCClientNetwork):
             if hasattr(imp, 'hooks_out'):
                 for hook in imp.hooks_out:
                     self.add_dispatch_out(*hook)
+
+        # Begin the imports
+        for module in dispatchers:
+            # Ergh I'd like it to use a relative import.
+            module = 'irclib.client.dispatch.{}'.format(module)
+            module_add_hooks(module)
+
+        for module in self.custom_dispatch:
+            module_add_hooks(module)
 
 
     """ Reset everything """
