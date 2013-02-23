@@ -8,6 +8,10 @@ import logging
 import base64
 import re
 
+from functools import partial
+from itertools import zip_longest
+
+from irclib.client.channel import Channel
 from irclib.client.network import IRCClientNetwork
 from irclib.common.numerics import *
 from irclib.common.dispatch import Dispatcher
@@ -34,6 +38,8 @@ class IRCClient(IRCClientNetwork):
     channel_keys - key:value pair of channel keys
     keepalive - interval to send keepalive pings (for lagcheck etc.)
     use_cap - use CAP
+    kick_autorejoin - rejoin on kick
+    kick_wait - wait time for rejoin (5 seconds default)
     """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -51,6 +57,8 @@ class IRCClient(IRCClientNetwork):
         self.use_sasl = kwargs.get('use_sasl', False)
         self.sasl_username = kwargs.get('sasl_username', None)
         self.sasl_pw = kwargs.get('sasl_pw', None)
+        self.autorejoin = kwargs.get('kick_autorejoin', False)
+        self.autorejoin_wait = kwargs.get('kick_wait', 5)
 
         if self.use_sasl and (not self.sasl_pw or not self.sasl_username):
             self.logger.warn("Unable to use SASL, no username/password provided")
@@ -147,8 +155,23 @@ class IRCClient(IRCClientNetwork):
     def default_dispatch(self):
         self.add_dispatch_in(RPL_WELCOME, 0, self.dispatch_welcome)
         self.add_dispatch_in(RPL_ISUPPORT, 0, self.dispatch_isupport)
+
         self.add_dispatch_in('PING', 0, self.dispatch_ping)
         self.add_dispatch_in('PONG', 0, self.dispatch_pong)
+
+        self.add_dispatch_in('JOIN', 5, self.dispatch_self_join)
+        self.add_dispatch_in('PART', 5, self.dispatch_self_part)
+        self.add_dispatch_in('KICK', 5, self.dispatch_self_part)
+
+        self.add_dispatch_out('JOIN', 5, self.dispatch_pending_join)
+        self.add_dispatch_out('PART', 5, self.dispatch_pending_part)
+
+        # Channel errors
+        cherr = [ERR_LINKCHANNEL, ERR_CHANNELISFULL, ERR_INVITEONLYCHAN,
+                 ERR_BANNEDFROMCHAN, ERR_BADCHANNELKEY, ERR_BADCHANMASK,
+                 ERR_NEEDREGGEDNICK, ERR_BADCHANNAME, ERR_THROTTLE, ERR_KEYSET]
+        for e in cherr:
+            self.add_dispatch_in(e, 0, self.dispatch_err_join)
 
         if self.use_starttls:
             self.add_dispatch_in(RPL_STARTTLS, 0, self.dispatch_starttls)
@@ -178,6 +201,9 @@ class IRCClient(IRCClientNetwork):
 
     """ Reset everything """
     def reset(self):
+        # Pending channels
+        self.pending_channels = set()
+
         # Reset caps
         self.supported_cap = []
 
@@ -418,6 +444,9 @@ class IRCClient(IRCClientNetwork):
     The default does joins and such
     """
     def dispatch_welcome(self, line):
+        # Set our nickname
+        self.current_nick = line.params[0]
+
         # Set up timer for lagometer
         self.timer_repeat('keepalive', self.keepalive, self.dispatch_keepalive)
 
@@ -467,3 +496,82 @@ class IRCClient(IRCClientNetwork):
         for buf in sbuf:
             channels, keys = ','.join(buf[0]), ' '.join(buf[1])
             self.cmdwrite('JOIN', (channels, keys))
+
+
+    """ Outgoing hook for pending joins """
+    def dispatch_pending_join(self, line):
+        if len(line.params) == 0: return
+
+        chlist = line.params[0].split(',')
+        self.pending_channels.update(chlist)
+
+
+    """ Outgoing hook for pending parts """
+    def dispatch_pending_part(self, line):
+        if len(line.params) == 0: return
+
+        chlist = line.params[0].split(',')
+        self.pending_channels.difference_update(chlist)
+
+        for channel in chlist:
+            if channel not in self.channels: continue
+
+            # Mark us as parting
+            self.channels[channel].parting = True
+
+
+    """ Dispatch us joining """
+    def dispatch_self_join(self, line):
+        if not line.hostmask: return
+
+        # When proper nick tracking is implemented, uncomment this
+        #if line.hostmask.nick != self.current_nick:
+        #    return
+
+        # Probably not gonna happen but better safe than sorry. :P
+        chlist = line.params[0].split(',')
+        if self.pending_channels.issuperset(chlist):
+            self.pending_channels.difference_update(chlist)
+
+        # Add the channel
+        for channel in chlist:
+            self.channels[channel] = Channel(self, channel)
+
+    """ Dispatch errors joining """
+    def dispatch_err_join(self, line):
+        self.logger.warn('Could not join channel {}: {} {}'.format(
+            line.params[1], line.command, line.params[-1]))
+
+        self.pending_channels.discard(line.params[1])
+
+
+    """ Dispatch us parting/being kicked """
+    def dispatch_self_part(self, line):
+        if not line.hostmask: return
+
+        # When proper nick tracking is implemented, uncomment this
+        #if line.hostmask.nick != self.current_nick:
+        #    return
+
+        channel = line.params[0]
+        self.pending_channels.discard(channel)
+
+        ch = self.channels.pop(channel, None)
+        if ch is None: return 
+
+        if not ch.parting:
+            self.logger.warn('Removed from channel {}'.format(channel))
+
+        if line.command == 'KICK' or not ch.parting:
+            if self.autorejoin:
+                # Use key if needed
+                key = ch.mode.has_mode('k')
+                if not key:
+                    key = ''
+
+                # synthesise a function to do the rejoin, and fire it on a timer
+                rejoin_func = partial(self.cmdwrite, 'JOIN', (channel, key))
+                self.timer_oneshot('rejoin_ch_{}'.format(channel),
+                                   self.autorejoin_wait, rejoin_func)
+
+
