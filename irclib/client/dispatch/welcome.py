@@ -7,13 +7,13 @@ from functools import partial
 
 """ Sends a keepalive message """
 def dispatch_keepalive(client):
-    if client.__last_pingstr is not None:
+    if client._last_pingstr is not None:
         raise SocketError('Socket timed out')
 
-    client.__last_pingtime = time()
-    client.__last_pingstr = randomstr()
+    client._last_pingtime = time()
+    client._last_pingstr = randomstr()
 
-    client.cmdwrite('PING', [client.__last_pingstr])
+    client.cmdwrite('PING', [client._last_pingstr])
 
 
 """ Generic dispatch for RPL_WELCOME 

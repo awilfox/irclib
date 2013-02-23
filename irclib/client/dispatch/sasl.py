@@ -34,6 +34,8 @@ def dispatch_sasl_authenticate(client, line):
 
 
 def dispatch_sasl_success(client, line):
+    client.timer_cancel('cap_terminate')
+
     client.identified = True
     if line.command == RPL_SASLSUCCESS:
         # end CAP
@@ -41,6 +43,8 @@ def dispatch_sasl_success(client, line):
 
 
 def dispatch_sasl_error(client, line):
+    client.timer_cancel('cap_terminate')
+
     # SASL failed
     client.logger.error('SASL auth failed! Error: {} {}'.format(
                         line.command,
