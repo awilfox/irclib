@@ -1,22 +1,10 @@
 #!/usr/bin/env python3
 
-import copy
-import warnings
-import string
-import time
+import importlib
 import logging
-import base64
-import re
 
-from functools import partial
-from itertools import zip_longest
-
-from irclib.client.channel import Channel
 from irclib.client.network import IRCClientNetwork
-from irclib.common.numerics import *
 from irclib.common.dispatch import Dispatcher
-from irclib.common.line import Line
-from irclib.common.util import randomstr
 from irclib.common.timer import Timer
 
 """ Basic IRC client class. """
@@ -67,14 +55,8 @@ class IRCClient(IRCClientNetwork):
             # Use SASL.
             self.use_sasl = True
 
-        if self.use_sasl:
-            send = '{acct}\0{acct}\0{pw}'.format(acct=self.sasl_username,
-                                                 pw=self.sasl_pw)
-            send = base64.b64encode(send.encode('UTF-8'))
-            self.__sasl_send = send.decode('ascii')
-
         if (self.use_sasl or self.use_starttls) and not self.use_cap:
-            warnings.warn("Enabling CAP because starttls and/or sasl requested")
+            self.logger.warn("Enabling CAP because starttls and/or sasl requested")
             self.use_cap = True
 
         # Identified with nickserv
@@ -153,44 +135,20 @@ class IRCClient(IRCClientNetwork):
     Only override this if you know what this does and what you're doing.
     """
     def default_dispatch(self):
-        self.add_dispatch_in(RPL_WELCOME, 0, self.dispatch_welcome)
-        self.add_dispatch_in(RPL_ISUPPORT, 0, self.dispatch_isupport)
-
-        self.add_dispatch_in('PING', 0, self.dispatch_ping)
-        self.add_dispatch_in('PONG', 0, self.dispatch_pong)
-
-        self.add_dispatch_in('JOIN', 5, self.dispatch_self_join)
-        self.add_dispatch_in('PART', 5, self.dispatch_self_part)
-        self.add_dispatch_in('KICK', 5, self.dispatch_self_part)
-
-        self.add_dispatch_out('JOIN', 5, self.dispatch_pending_join)
-        self.add_dispatch_out('PART', 5, self.dispatch_pending_part)
-
-        self.add_dispatch_in('MODE', 0, self.dispatch_mode)
-        self.add_dispatch_in(RPL_CHANNELMODEIS, 0, self.dispatch_mode)
-        self.add_dispatch_in(RPL_NAMREPLY, 0, self.dispatch_names)
-
-        # Channel errors
-        cherr = [ERR_LINKCHANNEL, ERR_CHANNELISFULL, ERR_INVITEONLYCHAN,
-                 ERR_BANNEDFROMCHAN, ERR_BADCHANNELKEY, ERR_BADCHANMASK,
-                 ERR_NEEDREGGEDNICK, ERR_BADCHANNAME, ERR_THROTTLE, ERR_KEYSET]
-        for e in cherr:
-            self.add_dispatch_in(e, 0, self.dispatch_err_join)
+        # Default list of dispatchers
+        dispatchers = ['isupport', 'join', 'part', 'pingpong', 'welcome']
 
         if self.use_starttls:
-            self.add_dispatch_in(RPL_STARTTLS, 0, self.dispatch_starttls)
-            self.add_dispatch_in(ERR_STARTTLS, 0, self.dispatch_starttls)
+            dispatchers.append('starttls')
+            self.use_cap = True
 
         if self.use_sasl:
-            self.add_dispatch_in('AUTHENTICATE', 0, self.dispatch_sasl)
-            self.add_dispatch_in(RPL_LOGGEDIN, 0, self.dispatch_sasl)
-            self.add_dispatch_in(RPL_SASLSUCCESS, 0, self.dispatch_sasl)
-            self.add_dispatch_in(ERR_SASLFAIL, 0, self.dispatch_sasl)
-            self.add_dispatch_in(ERR_SASLTOOLONG, 0, self.dispatch_sasl)
+            dispatchers.append('sasl')
+            self.use_cap = True
 
         # CAP state
         if self.use_cap:
-            self.add_dispatch_in('CAP', 0, self.dispatch_cap)
+            dispatchers.append('cap')
 
             # Capabilities
             self.cap_req = ['multi-prefix', 'account-notify',
@@ -201,6 +159,20 @@ class IRCClient(IRCClientNetwork):
 
             if self.use_sasl:
                 self.cap_req.append('sasl')
+
+        
+        # Begin the imports
+        for module in dispatchers:
+            module = 'irclib.client.dispatch.{}'.format(module)
+            imp = importlib.import_module(module)
+
+            if hasattr(imp, 'hooks_in'):
+                for hook in imp.hooks_in:
+                    self.add_dispatch_in(*hook)
+
+            if hasattr(imp, 'hooks_out'):
+                for hook in imp.hooks_out:
+                    self.add_dispatch_out(*hook)
 
 
     """ Reset everything """
@@ -218,8 +190,8 @@ class IRCClient(IRCClientNetwork):
         self.identified = False
 
         # Lag stats
-        self.__last_pingstr = None
-        self.__last_pingtime = 0
+        self._last_pingstr = None
+        self._last_pingtime = 0
         self.lag = 0
 
         try:
@@ -268,194 +240,9 @@ class IRCClient(IRCClientNetwork):
             self.timer_oneshot('cap_terminate', 15, self.terminate_cap)
 
 
-    """ Dispatches CAP stuff """
-    def dispatch_cap(self, line):
-        if line.params[1] == 'ACK':
-            # Cancel
-            self.timer_cancel('cap_terminate')
-
-            # Caps follow
-            self.supported_cap = line.params[-1].lower().split()
-            
-            if 'tls' in self.supported_cap and self.use_starttls and not self.use_ssl:
-                # Start TLS negotiation
-                self.cmdwrite('STARTTLS')
-            else:
-                # Register only if we don't need STARTTLS
-                self.dispatch_register()
-
-
     """ Terminate CAP """
     def terminate_cap(self):
         self.cmdwrite('CAP', ['END'])
-
-
-    """ Dispatch STARTTLS """
-    def dispatch_starttls(self, line):
-        if line.command == RPL_STARTTLS:
-            # Wrap the socket
-            self.wrap_ssl()
-
-            # Now safe to do this
-            self.dispatch_register()
-        elif line.command == ERR_STARTTLS:
-            # Failed somehow.
-            self.use_ssl = False
-            self.logger.critical('SSL is non-functional on this connection!')
-        else:
-            self.logger.warn('STARTTLS handler called for no reason o.O')
-            pass
-
-
-    """ Dispatch SASL """
-    def dispatch_sasl(self, line):
-        self.timer_cancel('cap_terminate')
-
-        if line.command == 'AUTHENTICATE':
-            # We got an authentication message?
-            if line.params[0] != '+':
-                self.logger.warn('Unexpected response from SASL auth agent, '
-                                 'continuing')
-
-            if not self.identified:
-                # Separate into 400 byte chunks
-                send = self.__sasl_send
-                split = [send[i:i+400] for i in range(0, len(send), 400)]
-                for item in split:
-                    self.cmdwrite('AUTHENTICATE', [item])
-
-                # Padding, if needed
-                if len(split[-1]) == 400:
-                    self.cmdwrite('AUTHENTICATE', ['+'])
-
-                # Timeout authentication
-                self.timer_oneshot('cap_terminate', 15, self.terminate_cap)
-        elif line.command == RPL_LOGGEDIN:
-            # SASL auth succeeded
-            self.identified = True
-        elif line.command == RPL_SASLSUCCESS:
-            # end CAP
-            self.terminate_cap()
-        elif line.command in (ERR_SASLFAIL, ERR_SASLTOOLONG):
-            # SASL failed
-            self.logger.error('SASL auth failed! Error: {} {}'.format(
-                              line.command,
-                              line.params[-1]))
-            self.terminate_cap()
-        else:
-            self.logger.debug('No handler for SASL numeric {}'.format(
-                              line.command))
-
-
-    """ Dispatch ISUPPORT """
-    def dispatch_isupport(self, line):
-        try:
-            isupport = line.params[2:-1]
-        except:
-            self.logger.error('ISUPPORT broken, probably old server')
-            return
-
-        for token in isupport:
-            name, sep, value = token.partition('=')
-
-            # We parse the most common ones.
-            # Pretty much anything else is up to you.
-            if value:
-                if name == 'PREFIX':
-                    # This is surprisingly a job best done for regex.
-                    m = re.match(r'\((.+)\)(.+)', value)
-
-                    # No match. :(
-                    if m is None: continue
-                    letter, prefix = m.groups()
-
-                    if len(letter) != len(prefix):
-                        # Your server is fucked yo.
-                        self.logger.warn('Broken IRC server; PREFIX is broken '
-                                         '(unbalanced prefixes and modes)')
-                        continue
-                    
-                    value = list(zip(letter, prefix))
-                elif name.endswith('LEN') or name in ('MODES', 'MONITOR'):
-                    # These are probably numeric values
-                    if value.isdigit:
-                        value = int(value)
-                elif name == 'EXTBAN':
-                    # Urgh this breaks the de-facto spec
-                    split = value.partition(',')
-                    if split[1]:
-                        value = (split[0], split[2])
-                else:
-                    # Attempt to parse as follows:
-                    #
-                    # - Comma separated values
-                    # - key : value pairs
-                    split = value.split(',')
-                    valuelist = []
-
-                    for item in split:
-                        key, sep, value = item.partition(':')
-                        if sep:
-                            item = (key, value)
-
-                        valuelist.append(item)
-
-                    if len(valuelist) == 1:
-                        # One item only
-                        value = valuelist[0]
-                    elif len(valuelist) > 1:
-                        value = valuelist
-            else:
-                # No value
-                value = None
-
-            # Set
-            self.isupport[name] = value
-            self.logger.debug('ISUPPORT token: {} {}'.format(name, value))
-
-
-    """ Generic dispatcher for ping """
-    def dispatch_ping(self, line):
-        self.cmdwrite('PONG', line.params)
-
-
-    """ Sends a keepalive message """
-    def dispatch_keepalive(self):
-        if self.__last_pingstr is not None:
-            raise socket.error('Socket timed out')
-
-        self.__last_pingtime = time.time()
-        self.__last_pingstr = randomstr()
-
-        self.cmdwrite('PING', [self.__last_pingstr])
-
-
-    """ Dispatches keepalive message """
-    def dispatch_pong(self, line):
-        if self.__last_pingstr is None:
-            return
-
-        if line.params[-1] != self.__last_pingstr:
-            return
-
-        self.__last_pingstr = None
-        self.lag = time.time() - self.__last_pingtime
-        self.logger.info('LAG: {}'.format(self.lag))
-
-
-    """ Generic dispatch for RPL_WELCOME 
-    
-    The default does joins and such
-    """
-    def dispatch_welcome(self, line):
-        # Set our nickname
-        self.current_nick = line.params[0]
-
-        # Set up timer for lagometer
-        self.timer_repeat('keepalive', self.keepalive, self.dispatch_keepalive)
-
-        # Do joins
-        self.combine_channels(self.default_channels, self.channel_keys)
 
 
     """ Combine channels """
@@ -500,119 +287,4 @@ class IRCClient(IRCClientNetwork):
         for buf in sbuf:
             channels, keys = ','.join(buf[0]), ' '.join(buf[1])
             self.cmdwrite('JOIN', (channels, keys))
-
-
-    """ Outgoing hook for pending joins """
-    def dispatch_pending_join(self, line):
-        if len(line.params) == 0: return
-
-        chlist = line.params[0].split(',')
-        self.pending_channels.update(chlist)
-
-
-    """ Outgoing hook for pending parts """
-    def dispatch_pending_part(self, line):
-        if len(line.params) == 0: return
-
-        chlist = line.params[0].split(',')
-        self.pending_channels.difference_update(chlist)
-
-        for channel in chlist:
-            if channel not in self.channels: continue
-
-            # Mark us as parting
-            self.channels[channel].parting = True
-
-
-    """ Dispatch us joining """
-    def dispatch_self_join(self, line):
-        if not line.hostmask: return
-
-        # When proper nick tracking is implemented, uncomment this
-        #if line.hostmask.nick != self.current_nick:
-        #    return
-
-        # Probably not gonna happen but better safe than sorry. :P
-        chlist = line.params[0].split(',')
-        if self.pending_channels.issuperset(chlist):
-            self.pending_channels.difference_update(chlist)
-
-        # Add the channel
-        for channel in chlist:
-            self.channels[channel] = Channel(self, channel)
-
-            # Request modes
-            self.cmdwrite('MODE', [channel])
-
-
-    """ Dispatch errors joining """
-    def dispatch_err_join(self, line):
-        self.logger.warn('Could not join channel {}: {} {}'.format(
-            line.params[1], line.command, line.params[-1]))
-
-        self.pending_channels.discard(line.params[1])
-
-
-    """ Dispatch us parting/being kicked """
-    def dispatch_self_part(self, line):
-        if not line.hostmask: return
-
-        # When proper nick tracking is implemented, uncomment this
-        #if line.hostmask.nick != self.current_nick:
-        #    return
-
-        channel = line.params[0]
-        self.pending_channels.discard(channel)
-
-        ch = self.channels.pop(channel, None)
-        if ch is None: return 
-
-        if not ch.parting:
-            self.logger.warn('Removed from channel {}'.format(channel))
-
-        if line.command == 'KICK' or not ch.parting:
-            if self.autorejoin:
-                # Use key if needed
-                key = ch.modes.has_mode('k')
-                if not key:
-                    key = ''
-
-                # synthesise a function to do the rejoin, and fire it on a timer
-                rejoin_func = partial(self.cmdwrite, 'JOIN', (channel, key))
-                self.timer_oneshot('rejoin_ch_{}'.format(channel),
-                                   self.autorejoin_wait, rejoin_func)
-
-
-    """ Dispatch mode setting """
-    def dispatch_mode(self, line):
-        ch = self.channels.get(line.params[1], None)
-        if ch is None: return
-
-        modestring = ' '.join(line.params[2:])
-        ch.modes.parse_modestring(modestring)
-
-
-    """ Dispatch names """
-    def dispatch_names(self, line):
-        ch = self.channels.get(line.params[2], None)
-        if ch is None: return
-
-        names = line.params[-1].split()
-        for name in names:
-            # Go through each name
-            keepscan = True # Ensure at least one iteration
-            mode = ''
-            while keepscan:
-                keepscan = False
-                for m, p in self.isupport['PREFIX']:
-                    if p == name[0]:
-                        # Match!
-                        name = name[1:] # Shift
-                        mode += m
-                        keepscan = True # Look again
-                        break
-
-            # Apply
-            for m in mode:
-                ch.modes.add_mode(m, name)
 

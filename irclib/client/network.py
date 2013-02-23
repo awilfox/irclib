@@ -152,10 +152,10 @@ class IRCClientNetwork(metaclass=ABCMeta):
     def call_dispatch_in(self, line):
         if line is None:
             if self.dispatch_cmd_in.has_name(None):
-                return self.dispatch_cmd_in(None)
+                return self.dispatch_cmd_in.run(None, [self, line])
         else:
             if self.dispatch_cmd_in.has_name(line.command):
-                return self.dispatch_cmd_in.run(line.command, [line])
+                return self.dispatch_cmd_in.run(line.command, [self, line])
 
         return [(None, None)]
 
@@ -164,10 +164,10 @@ class IRCClientNetwork(metaclass=ABCMeta):
     def call_dispatch_out(self, line):
         if line is None:
             if self.dispatch_cmd_out.has_name(None):
-                return self.dispatch_cmd_out(None)
+                return self.dispatch_cmd_out.run(None, [self, line])
         else:
             if self.dispatch_cmd_out.has_name(line.command):
-                return self.dispatch_cmd_out.run(line.command, [line])
+                return self.dispatch_cmd_out.run(line.command, [self, line])
         
         return [(None, None)]
 
