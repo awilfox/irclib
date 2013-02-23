@@ -6,6 +6,7 @@ import string
 import time
 import logging
 import base64
+import re
 
 from irclib.client.network import IRCClientNetwork
 from irclib.common.numerics import *
@@ -74,6 +75,13 @@ class IRCClient(IRCClientNetwork):
         # ISUPPORT storage
         self.isupport = dict()
 
+        # Defaults for ancient-ass servers
+        self.isupport['PREFIX'] = [('o', '@'), ('v', '%')]
+        self.isupport['CHANTYPES'] = '#&!+' # Old servers tend to use these.
+        self.isupport['NICKLEN'] = 8 # Olden servers
+        # Not sure if this is correct but it's good enough
+        self.isupport['CHANMODES'] = ['beIR', 'k', 'l', 'imnpstaqr']
+       
         # Default handlers
         self.default_dispatch()
 
@@ -138,6 +146,7 @@ class IRCClient(IRCClientNetwork):
     """
     def default_dispatch(self):
         self.add_dispatch_in(RPL_WELCOME, 0, self.dispatch_welcome)
+        self.add_dispatch_in(RPL_ISUPPORT, 0, self.dispatch_isupport)
         self.add_dispatch_in('PING', 0, self.dispatch_ping)
         self.add_dispatch_in('PONG', 0, self.dispatch_pong)
 
@@ -250,6 +259,7 @@ class IRCClient(IRCClientNetwork):
     def terminate_cap(self):
         self.cmdwrite('CAP', ['END'])
 
+
     """ Dispatch STARTTLS """
     def dispatch_starttls(self, line):
         if line.command == RPL_STARTTLS:
@@ -281,8 +291,8 @@ class IRCClient(IRCClientNetwork):
                 # Separate into 400 byte chunks
                 send = self.__sasl_send
                 split = [send[i:i+400] for i in range(0, len(send), 400)]
-                for s in split:
-                    self.cmdwrite('AUTHENTICATE', [s])
+                for item in split:
+                    self.cmdwrite('AUTHENTICATE', [item])
 
                 # Padding, if needed
                 if len(split[-1]) == 400:
@@ -305,6 +315,73 @@ class IRCClient(IRCClientNetwork):
         else:
             self.logger.debug('No handler for SASL numeric {}'.format(
                               line.command))
+
+
+    """ Dispatch ISUPPORT """
+    def dispatch_isupport(self, line):
+        try:
+            isupport = line.params[2:-1]
+        except:
+            self.logger.error('ISUPPORT broken, probably old server')
+            return
+
+        for token in isupport:
+            name, sep, value = token.partition('=')
+
+            # We parse the most common ones.
+            # Pretty much anything else is up to you.
+            if value:
+                if name == 'PREFIX':
+                    # This is surprisingly a job best done for regex.
+                    m = re.match(r'\((.+)\)(.+)', value)
+
+                    # No match. :(
+                    if m is None: continue
+                    letter, prefix = m.groups()
+
+                    if len(letter) != len(prefix):
+                        # Your server is fucked yo.
+                        self.logger.warn('Broken IRC server; PREFIX is broken '
+                                         '(unbalanced prefixes and modes)')
+                        continue
+                    
+                    value = list(zip(letter, prefix))
+                elif name.endswith('LEN') or name in ('MODES', 'MONITOR'):
+                    # These are probably numeric values
+                    if value.isdigit:
+                        value = int(value)
+                elif name == 'EXTBAN':
+                    # Urgh this breaks the de-facto spec
+                    split = value.partition(',')
+                    if split[1]:
+                        value = (split[0], split[2])
+                else:
+                    # Attempt to parse as follows:
+                    #
+                    # - Comma separated values
+                    # - key : value pairs
+                    split = value.split(',')
+                    valuelist = []
+
+                    for item in split:
+                        key, sep, value = item.partition(':')
+                        if sep:
+                            item = (key, value)
+
+                        valuelist.append(item)
+
+                    if len(valuelist) == 1:
+                        # One item only
+                        value = valuelist[0]
+                    elif len(valuelist) > 1:
+                        value = valuelist
+            else:
+                # No value
+                value = None
+
+            # Set
+            self.isupport[name] = value
+            self.logger.debug('ISUPPORT token: {} {}'.format(name, value))
 
 
     """ Generic dispatcher for ping """
