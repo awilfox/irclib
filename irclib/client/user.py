@@ -14,5 +14,4 @@ class User:
 
         self.channels = weakref.WeakValueDictionary()
 
-        self.modes = network.modes[self.nick]
 
