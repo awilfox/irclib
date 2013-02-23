@@ -84,11 +84,11 @@ class IRCClient(IRCClientNetwork):
         self.isupport = dict()
 
         # Defaults for ancient-ass servers
-        self.isupport['PREFIX'] = [('o', '@'), ('v', '%')]
+        self.isupport['PREFIX'] = [('o', '@'), ('v', '+')]
         self.isupport['CHANTYPES'] = '#&!+' # Old servers tend to use these.
         self.isupport['NICKLEN'] = 8 # Olden servers
         # Not sure if this is correct but it's good enough
-        self.isupport['CHANMODES'] = ['beIR', 'k', 'l', 'imnpstaqr']
+        self.isupport['CHANMODES'] = ['beI', 'k', 'l', 'imntsp']
        
         # Default handlers
         self.default_dispatch()
@@ -165,6 +165,10 @@ class IRCClient(IRCClientNetwork):
 
         self.add_dispatch_out('JOIN', 5, self.dispatch_pending_join)
         self.add_dispatch_out('PART', 5, self.dispatch_pending_part)
+
+        self.add_dispatch_in('MODE', 0, self.dispatch_mode)
+        self.add_dispatch_in(RPL_CHANNELMODEIS, 0, self.dispatch_mode)
+        self.add_dispatch_in(RPL_NAMREPLY, 0, self.dispatch_names)
 
         # Channel errors
         cherr = [ERR_LINKCHANNEL, ERR_CHANNELISFULL, ERR_INVITEONLYCHAN,
@@ -537,6 +541,10 @@ class IRCClient(IRCClientNetwork):
         for channel in chlist:
             self.channels[channel] = Channel(self, channel)
 
+            # Request modes
+            self.cmdwrite('MODE', [channel])
+
+
     """ Dispatch errors joining """
     def dispatch_err_join(self, line):
         self.logger.warn('Could not join channel {}: {} {}'.format(
@@ -565,7 +573,7 @@ class IRCClient(IRCClientNetwork):
         if line.command == 'KICK' or not ch.parting:
             if self.autorejoin:
                 # Use key if needed
-                key = ch.mode.has_mode('k')
+                key = ch.modes.has_mode('k')
                 if not key:
                     key = ''
 
@@ -574,4 +582,37 @@ class IRCClient(IRCClientNetwork):
                 self.timer_oneshot('rejoin_ch_{}'.format(channel),
                                    self.autorejoin_wait, rejoin_func)
 
+
+    """ Dispatch mode setting """
+    def dispatch_mode(self, line):
+        ch = self.channels.get(line.params[1], None)
+        if ch is None: return
+
+        modestring = ' '.join(line.params[2:])
+        ch.modes.parse_modestring(modestring)
+
+
+    """ Dispatch names """
+    def dispatch_names(self, line):
+        ch = self.channels.get(line.params[2], None)
+        if ch is None: return
+
+        names = line.params[-1].split()
+        for name in names:
+            # Go through each name
+            keepscan = True # Ensure at least one iteration
+            mode = ''
+            while keepscan:
+                keepscan = False
+                for m, p in self.isupport['PREFIX']:
+                    if p == name[0]:
+                        # Match!
+                        name = name[1:] # Shift
+                        mode += m
+                        keepscan = True # Look again
+                        break
+
+            # Apply
+            for m in mode:
+                ch.modes.add_mode(m, name)
 
