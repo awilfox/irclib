@@ -18,11 +18,15 @@ def dispatch_cap_ls(client, line):
 
     common = ' '.join(client.cap_req.intersection(caps))
 
+    if not common:
+        # No common caps
+        self.cap_terminate()
+
     # Request common caps
     client.cmdwrite('CAP', ('REQ', common))
 
     # Restart the timer
-    client.timer_oneshot('cap_terminate', 10, client.terminate_cap)
+    client.timer_oneshot('cap_terminate', 10, client.cap_terminate)
 
 
 def dispatch_cap_ack(client, line):
@@ -46,7 +50,7 @@ def dispatch_cap_nak(client, line):
     client.logger.warn('caps could not be approved: {}'.format(
         line.params[-1]))
 
-    client.terminate_cap()
+    client.cap_terminate()
 
 
 hooks_in = (

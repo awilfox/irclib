@@ -32,7 +32,7 @@ def dispatch_sasl_authenticate(client, line):
             client.cmdwrite('AUTHENTICATE', ['+'])
 
         # Timeout authentication
-        client.timer_oneshot('cap_terminate', 15, client.terminate_cap)
+        client.timer_oneshot('cap_terminate', 15, client.cap_terminate)
 
 
 def dispatch_sasl_success(client, line):
@@ -41,7 +41,7 @@ def dispatch_sasl_success(client, line):
     client.identified = True
     if line.command == RPL_SASLSUCCESS:
         # end CAP
-        client.terminate_cap()
+        client.cap_terminate()
 
 
 def dispatch_sasl_error(client, line):
@@ -51,7 +51,7 @@ def dispatch_sasl_error(client, line):
     client.logger.error('SASL auth failed! Error: {} {}'.format(
                         line.command,
                         line.params[-1]))
-    client.terminate_cap()
+    client.cap_terminate()
 
 
 hooks_in = ( 

@@ -228,12 +228,12 @@ class IRCClient(IRCClientNetwork):
 
             # End of CAP if we're not using SASL
             if self.use_cap and not self.use_sasl:
-                self.terminate_cap()
+                self.cap_terminate()
             elif self.use_sasl and 'sasl' in self.supported_cap:
                 self.cmdwrite('AUTHENTICATE', ['PLAIN'])
 
                 # Abort SASL after some time
-                self.timer_oneshot('cap_terminate', 15, self.terminate_cap)
+                self.timer_oneshot('cap_terminate', 15, self.cap_terminate)
 
 
     """ Start initial handshake """
@@ -248,11 +248,11 @@ class IRCClient(IRCClientNetwork):
             self.cmdwrite('CAP', ['LS'])
 
             # Cancel CAP after some time
-            self.timer_oneshot('cap_terminate', 10, self.terminate_cap)
+            self.timer_oneshot('cap_terminate', 10, self.cap_terminate)
 
 
     """ Terminate CAP """
-    def terminate_cap(self):
+    def cap_terminate(self):
         self.cmdwrite('CAP', ['END'])
 
 
