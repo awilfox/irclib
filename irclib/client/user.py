@@ -2,7 +2,7 @@
 
 import weakref
 
-class User:
+class User(object):
     def __init__(self, network, nick, user=None, host=None, realname=None,
                  account=None):
         self.network = network

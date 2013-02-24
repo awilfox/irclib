@@ -30,7 +30,7 @@ class IRCClient(IRCClientNetwork):
     kick_wait - wait time for rejoin (5 seconds default)
     """
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        IRCClientNetwork.__init__(self, **kwargs)
 
         self.nick = kwargs.get('nick', 'irclib')
         self.altnick = kwargs.get('altnick', 'irclib_')
@@ -122,7 +122,7 @@ class IRCClient(IRCClientNetwork):
         else:
             ch = '<'
 
-        print('{} {}'.format(ch, line))
+        print(u'{} {}'.format(ch, line))
 
 
     """ Generator for IRC lines, e.g. non-terminating stream """
@@ -241,7 +241,7 @@ class IRCClient(IRCClientNetwork):
 
     """ Start initial handshake """
     def connect(self, timeout=10):
-        super().connect(timeout)
+        IRCClientNetwork.connect(self, timeout)
 
         if not self.use_cap:
             # Not using CAP :(
@@ -257,6 +257,7 @@ class IRCClient(IRCClientNetwork):
     """ Terminate CAP """
     def cap_terminate(self):
         self.cmdwrite('CAP', ['END'])
+        self.dispatch_register()
 
 
     """ Combine channels """
@@ -299,6 +300,6 @@ class IRCClient(IRCClientNetwork):
             sbuf.append((chbuf, keybuf))
 
         for buf in sbuf:
-            channels, keys = ','.join(buf[0]), ' '.join(buf[1])
+            channels, keys = u','.join(buf[0]), u' '.join(buf[1])
             self.cmdwrite('JOIN', (channels, keys))
 

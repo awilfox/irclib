@@ -25,7 +25,7 @@ def dispatch_privmsg(client, line):
         user = line.hostmask.user
         host = line.hostmask.host
 
-        if nick in self.users:
+        if nick in client.users:
             client.users[nick].user = user
             client.users[nick].host = host
 

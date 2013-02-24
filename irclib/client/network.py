@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import sys
 import errno
 import warnings
 import socket
@@ -18,7 +19,9 @@ except ImportError:
     ssl = None
 
 
-class IRCClientNetwork(metaclass=ABCMeta):
+class IRCClientNetwork(object):
+    __metaclass__ = ABCMeta
+
     def __init__(self, **kwargs):
         self.host = kwargs.get('host')
         self.port = kwargs.get('port')
@@ -83,7 +86,11 @@ class IRCClientNetwork(metaclass=ABCMeta):
             self.logger.debug('Line cancelled due to hook')
 
         self.log_callback(line, False)
-        self.send(bytes(line))
+        send = bytes(line)
+        if not send.endswith('\r\n'):
+            send += '\r\n'
+
+        self.send(send)
 
 
     """ Write a raw command to the wire """

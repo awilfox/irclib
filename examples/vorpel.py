@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
+# -*- coding: UTF-8 -*-
 
 from irclib.client import client
 from irclib.common.line import Line
 from random import choice, randint
+
 import logging
+import os
 
 # Set log level
 logging.basicConfig(level=logging.DEBUG)
@@ -69,7 +72,7 @@ def run(instance):
                 spew(line, generator, instance.isupport['CHANTYPES'])
     except IOError as e:
         print("Disconnected", str(e))
-
+        os.sleep(5)
 
 kwargs = {
     'nick' : 'Vorpel',

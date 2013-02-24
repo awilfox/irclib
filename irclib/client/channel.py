@@ -3,7 +3,7 @@
 import weakref
 from irclib.common.modes import ModeSet
 
-class Channel:
+class Channel(object):
     def __init__(self, network, name):
         self.network = network
         self.name = name
