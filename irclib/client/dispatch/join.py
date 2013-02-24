@@ -10,6 +10,17 @@ def dispatch_other_join(client, line):
         return
 
     channel = line.params[0]
+    if len(params) > 1:
+        # extended-join
+        account = line.params[1]
+        realname = line.params[2]
+
+        if account == '*':
+            account = None
+    else:
+        account = None
+        realname = None
+
     nick = line.hostmask.nick
     user = line.hostmask.user
     host = line.hostmask.host
@@ -19,7 +30,7 @@ def dispatch_other_join(client, line):
 
     # Create a user if one doesn't exist
     if nick not in client.users:
-        client.users[nick] = User(client, nick, user, host)
+        client.users[nick] = User(client, nick, user, host, realname, account)
 
     if channel in client.channels:
         client.channels[channel].user_add(nick, client.users[nick])

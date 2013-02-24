@@ -3,14 +3,14 @@
 import weakref
 
 class User:
-    def __init__(self, network, nick, user=None, host=None, realname=None):
+    def __init__(self, network, nick, user=None, host=None, realname=None,
+                 account=None):
         self.network = network
         self.nick = nick
         self.user = user
         self.host = host
         self.realname = realname
-
-        self.account = None
+        self.account = account
 
         self.channels = weakref.WeakValueDictionary()
 
