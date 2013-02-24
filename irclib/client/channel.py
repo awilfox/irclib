@@ -33,10 +33,12 @@ class Channel:
 
 
     def user_del(self, nick):
-        del self.users[nick]
+        self.users.pop(nick, None)
 
 
     def user_rename(self, oldnick, newnick):
-        self.users[newnick] = self.users[oldnick]
-        del self.users[oldnick]
+        user = self.users.pop(oldnick, None)
+        if not user: return
+
+        self.users[newnick] = user
 

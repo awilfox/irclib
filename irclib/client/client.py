@@ -205,6 +205,9 @@ class IRCClient(IRCClientNetwork):
         self._last_pingtime = 0
         self.lag = 0
 
+        # Pending WHOX replies
+        self._whox_pending = set()
+
         try:
             self.timer_cancel_all()
         except ValueError:

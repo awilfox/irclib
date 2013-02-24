@@ -37,6 +37,7 @@ def dispatch_other_join(client, line):
 
     if channel in client.channels:
         client.channels[channel].user_add(nick, client.users[nick])
+        client.users[nick].channel_add(client.channels[channel])
     else:
         client.logger.critical('DESYNC detected! Join detected in a channel we'
                                ' are not in')
@@ -60,16 +61,33 @@ def dispatch_client_join(client, line):
         # Request modes
         client.cmdwrite('MODE', [channel])
 
-        whofunc = partial(client.cmdwrite, 'WHO', [channel])
+        if 'WHOX' in client.isupport:
+            num = randint(0, 999)
+            count = 0
+            while num in client._whox_pending:
+                num = randint(0, 999)
+                count += 1
+                if count > 1024: return
+
+            client._whox_pending.add(num)
+
+            num = str(num)
+            whoparam = (channel, '%tcuisnflar,'+num)
+        else:
+            whoparam = (channel,)
+
+        whofunc = partial(client.cmdwrite, 'WHO', whoparam)
 
         # I'm gonna need bout tree fiddy (seconds)
         # No but seriously, this is a load-lessening measure
         wait = randint(30, 60)
 
+        # Initial who request
         client.timer_oneshot('sendwho_{}'.format(channel), wait/10, whofunc)
         
-        if 'away-notify' not in client.supported_cap:
-            # Add a recurring check >_>
+        if not all(x in client.supported_cap for x in ('away-notify',
+                                                       'account-notify')):
+            # Add a recurring check if needed 
             client.timer_repeat('sendwho_r_{}'.format(channel), wait, whofunc)
 
 

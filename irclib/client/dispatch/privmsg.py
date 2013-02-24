@@ -1,8 +1,17 @@
 from time import time, ctime
 from functools import partial
 
+from irclib.client.user import User
 from irclib.common.line import Line
 from irclib.common.util import splitstr
+
+""" Expire a user in 5 minutes """
+def expire_user(client, u):
+    timername = 'expire_user_{}'.format(u.nick)
+    client.timer_cancel(timername)
+    expire = partial(lambda x: client.users.pop(x, None), u.nick)
+    client.timer_oneshot(timername, 300, expire)
+
 
 """ Foreign privmsg (NOT CTCP) """
 def dispatch_privmsg(client, line):
@@ -24,11 +33,12 @@ def dispatch_privmsg(client, line):
     if nick in client.users:
         # Re-up if needed
         if len(client.users[nick].channels) == 0:
-            timername = 'expire_user_{}'.format(nick)
-            client.timer_cancel(timername)
-            expire = partial(lambda x: client.users.pop(x, None), nick)
-            client.timer_oneshot(timername, 300, expire)
-
+            expire_user(client, client.users[nick])
+    else:
+        # TODO - maybe whois?
+        client.users[nick] = User(nick, user, host)
+        expire_user(client, client.users[nick])
+        
 
 """ Dispatch CTCP """
 def dispatch_ctcp(client, line):

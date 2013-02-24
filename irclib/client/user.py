@@ -19,6 +19,15 @@ class User:
         # Is this user an IRC op?
         self.operator = None
 
+        # Unknown idle time
+        self.idle = None
+
+        # Unknown IP
+        self.ip = None
+
+        # Unknown server
+        self.server = None
+
         self.channels = weakref.WeakValueDictionary()
 
     def channel_add(self, name, ch):
@@ -26,6 +35,5 @@ class User:
 
 
     def channel_del(self, name):
-        del self.channels[name]
-
+        self.channels.pop(name, None)
 

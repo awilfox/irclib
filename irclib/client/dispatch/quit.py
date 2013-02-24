@@ -6,7 +6,7 @@ def dispatch_quit(client, line):
 
     nick = line.hostmask.nick
     if nick in client.users:
-        del client.users[nick]
+        client.users.pop(nick, None)
 
 
 hooks_in = (
