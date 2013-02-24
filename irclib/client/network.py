@@ -6,6 +6,7 @@ import socket
 import logging
 from abc import ABCMeta, abstractmethod
 
+from irclib.common.six import u
 from irclib.common.dispatch import Dispatcher
 from irclib.common.line import Line
 from irclib.common.util import socketerror
@@ -194,9 +195,7 @@ class IRCClientNetwork(object):
 
     """ Dispatch for CTCP incoming """
     def call_ctcp_in(self, line, target, command, param):
-        print(repr(command))
         if self.dispatch_ctcp_in.has_name(command):
-            print('Dispatch found!')
             return self.dispatch_ctcp_in.run(command, (self, line, target,
                                                        command, param))
 
@@ -221,7 +220,6 @@ class IRCClientNetwork(object):
 
     """ Add CTCP dispatch function """
     def add_ctcp_in(self, command, priority, function):
-        print('add dispatch for ctcp', repr(command))
         self.dispatch_ctcp_in.add(command, priority, function)
 
 

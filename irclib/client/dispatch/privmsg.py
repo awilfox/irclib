@@ -45,31 +45,41 @@ def dispatch_ctcp(client, line):
     if len(line.params) <= 1:
         return
 
-    target = line.params[0]
+    if not line.hostmask:
+        return
+
+    target = line.hostmask.nick 
     message = line.params[-1]
 
     if not (message.startswith('\x01') or message.endswith('\x01')):
         return
 
     message = message.strip('\x01')
-    command, sep, cmdparam = message.partition(' ')
+    command, sep, param = message.partition(' ')
     command = command.upper()
 
-    if target == client.current_nick:
-        # privmsg to us, respond in private
-        target = line.hostmask.nick
+    # Call CTCP dispatch
+    client.call_ctcp_in(line, target, command, param)
 
-    response = None
-    if command == 'VERSION':
-        response = 'VERSION ' + client.version
-    elif command == 'TIME':
-        response = 'TIME ' + ctime()
-    elif command == 'PING':
-        response = message
-    
-    if response:
-        response = '\x01' + response + '\x01'
-        client.cmdwrite('NOTICE', (target, response))
+
+""" Dispatch CTCP VERSION """
+def dispatch_ctcp_version(client, line, target, command, param):
+    client.nctcpwrite(target, command, client.version)
+
+
+""" Dispatch CTCP TIME """
+def dispatch_ctcp_time(client, line, target, command, param):
+    client.nctcpwrite(target, command, ctime())
+
+
+""" Dispatch CTCP PING """
+def dispatch_ctcp_ping(client, line, target, command, param):
+    client.nctcpwrite(target, command, param)
+
+
+""" Dispatch CTCP FINGER """
+def dispatch_ctcp_finger(client, line, target, command, param):
+    client.nctcpwrite(target, command, self.current_nick)
 
 
 """ Do some buffering """
@@ -99,6 +109,10 @@ def dispatch_split_msg(client, line):
 
     message = line.params[-1]
 
+    if message.startswith('\x01') or message.endswith('\x01'):
+        # CTCP. don't touch.
+        return
+
     # XXX - could cram more in...
     # That will require self hostname tracking though. :p
     if len(message) > 450:
@@ -123,5 +137,11 @@ hooks_out = (
     ('PRIVMSG', 1, dispatch_pace_msg),
     ('NOTICE', 0, dispatch_split_msg),
     ('NOTICE', 1, dispatch_pace_msg),
+)
+
+hooks_ctcp_in = (
+    ('VERSION', 0, dispatch_ctcp_version),
+    ('TIME', 0, dispatch_ctcp_time),
+    ('PING', 0, dispatch_ctcp_ping),
 )
 

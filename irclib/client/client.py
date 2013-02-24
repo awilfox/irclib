@@ -184,6 +184,10 @@ class IRCClient(IRCClientNetwork):
                 for hook in imp.hooks_out:
                     self.add_dispatch_out(*hook)
 
+            if hasattr(imp, 'hooks_ctcp_in'):
+                for hook in imp.hooks_ctcp_in:
+                    self.add_ctcp_in(*hook)
+
         # Begin the imports
         for module in dispatchers:
             # Ergh I'd like it to use a relative import.
