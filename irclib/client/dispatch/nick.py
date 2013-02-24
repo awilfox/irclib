@@ -1,3 +1,5 @@
+from random import randint
+
 from irclib.client.user import User
 from irclib.common.numerics import *
 
@@ -36,6 +38,61 @@ def dispatch_nick(client, line):
         client.users[newnick] = User(client, newnick, user, host)
 
 
+""" Munge a nick """
+def munge_nick(nick, trycount):
+    leetmap = {'e':'3',
+               'a':'4',
+               't':'7',
+               's':'5',
+               'q':'2',
+               'b':'8',
+               'o':'0',
+               'l':'|',
+               'i':'|',
+               '|':'\\'}
+
+    if trycount == 0:
+        return nick + '_'
+    elif trycount == 1:
+        nick = nick[:-1]
+        return nick + '^'
+    elif trycount >= 2:
+        if trycount == 2:
+            nick = nick[:-1]
+
+        oldnick = nick
+        for pos, char in enumerate(nick[1:]):
+            if char in leetmap:
+                newchar = leetmap[nick[pos]]
+                nick = ''.join((nick[:pos-1], newchar, nick[pos:]))
+                break
+
+        if nick == oldnick:
+            nick += '_'
+
+    return nick
+
+
+""" Oh noes, have to use an alternate nick """
+def dispatch_alt_nick(client, line):
+    attempt = line.params[1]
+
+    count = getattr(client, '_nick_trycount', None)
+    if count is None:
+        # Try our alternate first
+        nick = client.altnick
+        client._nick_trycount = 0
+        count = 0
+    else:
+        nick = munge_nick(attempt, count)
+        client._nick_trycount += 1
+
+    client.cmdwrite('NICK', [nick])
+
+
 hook_in = (
     ('NICK', 0, dispatch_nick),
+    (ERR_ERRONEUSNICKNAME, 0, dispatch_alt_nick),
+    (ERR_NICKNAMEINUSE, 0, dispatch_alt_nick),
 )
+

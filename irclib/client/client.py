@@ -36,7 +36,7 @@ class IRCClient(IRCClientNetwork):
         IRCClientNetwork.__init__(self, **kwargs)
 
         self.nick = kwargs.get('nick', 'irclib')
-        self.altnick = kwargs.get('altnick', 'irclib_')
+        self.altnick = kwargs.get('altnick', self.nick+'_')
         self.user = kwargs.get('user', self.nick)
         self.realname = kwargs.get('realname', 'Python IRC library')
         self.version = kwargs.get('version', 'Python irclib v0.1. (C) Elizabeth Myers')
