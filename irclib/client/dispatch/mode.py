@@ -1,3 +1,4 @@
+from irclib.common.six import u, b
 from irclib.common.numerics import *
 
 """ Dispatch mode setting """
@@ -5,7 +6,7 @@ def dispatch_mode(client, line):
     ch = client.channels.get(line.params[1], None)
     if ch is None: return
 
-    modestring = u' '.join(line.params[2:])
+    modestring = u(' '.join(line.params[2:]))
     ch.modes.parse_modestring(modestring)
 
 

@@ -3,6 +3,8 @@
 from itertools import islice
 from collections import deque
 
+from irclib.common.six import u, b
+
 """ Stores a user hostmask
 
 >>> repr(Hostmask(mask="dongs!cocks@lol.org"))
@@ -170,7 +172,7 @@ class Line:
             else:
                 line.extend(self.params)
 
-        return u' '.join(line) + '\r\n'
+        return u(' '.join(line)) + u('\r\n')
 
     def __bytes__(self):
         return str(self).encode('UTF-8')

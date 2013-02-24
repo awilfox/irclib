@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 
+from __future__ import unicode_literals, print_function
+
 import importlib
 import logging
 
 from irclib.client.network import IRCClientNetwork
 from irclib.common.dispatch import Dispatcher
 from irclib.common.timer import Timer
+from irclib.common.six import u, b
 
 """ Basic IRC client class. """
 class IRCClient(IRCClientNetwork):
@@ -122,9 +125,7 @@ class IRCClient(IRCClientNetwork):
         else:
             ch = '<'
 
-        line = str(line).rstrip('\r\n')
-
-        print(u'{} {}'.format(ch, line))
+        print(u('{} {}'.format(ch, line)), end='')
 
 
     """ Generator for IRC lines, e.g. non-terminating stream """
@@ -302,6 +303,6 @@ class IRCClient(IRCClientNetwork):
             sbuf.append((chbuf, keybuf))
 
         for buf in sbuf:
-            channels, keys = u','.join(buf[0]), u' '.join(buf[1])
+            channels, keys = u(','.join(buf[0])), u(' '.join(buf[1]))
             self.cmdwrite('JOIN', (channels, keys))
 
