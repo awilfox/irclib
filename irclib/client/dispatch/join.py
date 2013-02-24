@@ -23,6 +23,9 @@ def dispatch_other_join(client, line):
 
     if channel in client.channels:
         client.channels[channel].user_add(nick, client.users[nick])
+    else:
+        client.logger.critical('DESYNC detected! Join detected in a channel we'
+                               ' are not in')
 
 
 """ Dispatch us joining """
