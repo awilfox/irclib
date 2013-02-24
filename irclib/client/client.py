@@ -122,6 +122,8 @@ class IRCClient(IRCClientNetwork):
         else:
             ch = '<'
 
+        line = str(line).rstrip('\r\n')
+
         print(u'{} {}'.format(ch, line))
 
 

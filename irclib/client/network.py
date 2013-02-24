@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import sys
 import errno
 import warnings
 import socket
@@ -86,11 +85,7 @@ class IRCClientNetwork(object):
             self.logger.debug('Line cancelled due to hook')
 
         self.log_callback(line, False)
-        send = bytes(line)
-        if not send.endswith('\r\n'):
-            send += '\r\n'
-
-        self.send(send)
+        self.send(bytes(line))
 
 
     """ Write a raw command to the wire """
