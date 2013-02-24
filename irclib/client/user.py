@@ -12,6 +12,10 @@ class User:
         self.realname = realname
         self.account = account
 
+        # Unknown away status
+        self.away = None
+        self.away_message = None
+
         self.channels = weakref.WeakValueDictionary()
 
     def channel_add(self, name, ch):
