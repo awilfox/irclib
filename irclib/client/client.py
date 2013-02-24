@@ -5,6 +5,8 @@ from __future__ import unicode_literals, print_function
 import importlib
 import logging
 
+from copy import deepcopy
+
 from irclib.client.network import IRCClientNetwork
 from irclib.common.dispatch import Dispatcher
 from irclib.common.timer import Timer
@@ -126,6 +128,7 @@ class IRCClient(IRCClientNetwork):
         else:
             ch = '<'
 
+        line = deepcopy(line)
         # special formatters
         if line.command in ('PRIVMSG', 'NOTICE'):
             line.params[-1] = replace_colours(line.params[-1])
