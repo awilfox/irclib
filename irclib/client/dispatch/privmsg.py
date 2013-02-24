@@ -105,5 +105,7 @@ hooks_in = (
 hooks_out = (
     ('PRIVMSG', 0, dispatch_split_msg),
     ('PRIVMSG', 1, dispatch_pace_msg),
+    ('NOTICE', 0, dispatch_split_msg),
+    ('NOTICE', 1, dispatch_pace_msg),
 )
 
