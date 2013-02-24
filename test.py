@@ -6,7 +6,7 @@ from random import choice, randint
 import logging
 
 # Set log level
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 randomshit = [
     'I have to go in five minutes',
@@ -46,7 +46,7 @@ randomshit = [
     'too lazy to scroll up, what did you say',
 ]
 
-def spew(line, generator):
+def spew(line, generator, cprefix):
     if randint(0, 14) != 0:
         return
 
@@ -55,9 +55,7 @@ def spew(line, generator):
     target = line.params[0]
     msg = line.params[-1]
 
-    # we just assume these are the only valid channels for now
-    # XXX not upheld on ircnet
-    if target[0] not in ('#', '&'):
+    if target[0] not in cprefix:
         target = line.hostmask.nick
 
     generator.send(Line(command='PRIVMSG', params=(target, choice(randomshit))))
@@ -68,7 +66,7 @@ def run(instance):
         generator = instance.get_lines()
         for line in generator:
             if line.command == "PRIVMSG":
-                spew(line, generator)
+                spew(line, generator, instance.isupport['CHANTYPES'])
     except IOError as e:
         print("Disconnected", str(e))
 
