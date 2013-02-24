@@ -152,7 +152,7 @@ class IRCClient(IRCClientNetwork):
     def default_dispatch(self):
         # Default list of dispatchers
         dispatchers = ['account', 'away', 'isupport', 'join', 'mode', 'names',
-                       'nick', 'part', 'pingpong', 'privmsg', 'quit',
+                       'nick', 'part', 'pingpong', 'privmsg', 'quit', 'topic',
                        'welcome', 'who']
 
         if self.use_starttls:

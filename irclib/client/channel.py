@@ -27,6 +27,10 @@ class Channel(object):
         self.timestamp = 0
         self.url = None
 
+        self.topic = None
+        self.topic_who = None
+        self.topic_time = None
+
 
     def user_add(self, nick, user):
         self.users[nick] = user
