@@ -2,6 +2,9 @@ from irclib.client.user import User
 from irclib.client.channel import Channel
 from irclib.common.numerics import *
 
+from random import randint
+from functools import partial
+
 """ Dispatch other user join """
 def dispatch_other_join(client, line):
     if not line.hostmask: return
@@ -56,6 +59,18 @@ def dispatch_client_join(client, line):
 
         # Request modes
         client.cmdwrite('MODE', [channel])
+
+        whofunc = partial(client.cmdwrite, 'WHO', [channel])
+
+        # I'm gonna need bout tree fiddy (seconds)
+        # No but seriously, this is a load-lessening measure
+        wait = randint(30, 60)
+
+        client.timer_oneshot('sendwho_{}'.format(channel), wait/10, whofunc)
+        
+        if 'away-notify' not in client.supported_cap:
+            # Add a recurring check >_>
+            client.timer_repeat('sendwho_r_{}'.format(channel), wait, whofunc)
 
 
 """ Dispatch errors joining """
