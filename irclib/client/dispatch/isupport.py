@@ -30,6 +30,9 @@ def dispatch_isupport(client, line):
                     continue
 
                 value = list(zip(letter, prefix))
+
+                # Update the map
+                client.preifx_to_mode = {s:m for m,s in value}
             elif name.endswith('LEN') or name in ('MODES', 'MONITOR'):
                 # These are probably numeric values
                 if value.isdigit:

@@ -12,14 +12,19 @@ def dispatch_names(client, line):
         keepscan = True # Ensure at least one iteration
         mode = ''
         while keepscan:
+            # If we don't find a prefix, there's nothing else to look for.
+            # We assume there isn't for this reason.
             keepscan = False
-            for m, p in client.isupport['PREFIX']:
-                if p == name[0]:
-                    # Match!
-                    name = name[1:] # Shift
-                    mode += m
-                    keepscan = True # Look again
-                    break
+
+            # Check for prefix
+            if name[0] in client.preifx_to_mode:
+                # Shift
+                prefix = name[0]
+                name = name[1:]
+                mode += client.prefix.to.mode[prefix]
+
+                # We found one. There could be another, thus
+                keepscan = True # look for more
 
         # Apply
         for m in mode:
@@ -28,7 +33,6 @@ def dispatch_names(client, line):
         # Add the user
         if name not in client.users:
             client.users[name] = User(client, name)
-            # TODO: issue whois request
 
         # Add channel to user
         client.users[name].channels[ch.name] = ch
@@ -37,7 +41,7 @@ def dispatch_names(client, line):
         ch.user_add(name, client.users[name])
 
 
-
 hooks_in = (
     (RPL_NAMREPLY, 0, dispatch_names),
 )
+

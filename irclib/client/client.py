@@ -73,6 +73,9 @@ class IRCClient(IRCClientNetwork):
         # Not sure if this is correct but it's good enough
         self.isupport['CHANMODES'] = ['beI', 'k', 'l', 'imntsp']
        
+        # Map prefix to mode
+        self.preifx_to_mode = {s:m for m,s in self.isupport['PREFIX']}
+
         # Default handlers
         self.default_dispatch()
 
