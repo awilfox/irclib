@@ -9,6 +9,7 @@ from irclib.client.network import IRCClientNetwork
 from irclib.common.dispatch import Dispatcher
 from irclib.common.timer import Timer
 from irclib.common.six import u, b
+from irclib.common.colourmap import replace_colours
 
 """ Basic IRC client class. """
 class IRCClient(IRCClientNetwork):
@@ -124,6 +125,10 @@ class IRCClient(IRCClientNetwork):
             ch = '>'
         else:
             ch = '<'
+
+        # special formatters
+        if line.command in ('PRIVMSG', 'NOTICE'):
+            line.params[-1] = replace_colours(line.params[-1])
 
         print('{} {}'.format(ch, line), end='')
 
