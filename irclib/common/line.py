@@ -109,6 +109,8 @@ class Line:
         if line is not None:
             self.__parse_line(line)
 
+        self.cancelled = False
+
     def __parse_line(self, line, encoding='UTF-8'):
         if isinstance(line, bytes):
             line = line.decode(encoding)

@@ -19,3 +19,8 @@ def socketerror(error, errstr=None, instance=None):
 
     raise SocketError(error, errstr)
 
+
+""" Split a long string """
+def splitstr(buf, length):
+    return [buf[i:i+length] for i in range(0, len(buf), length)]
+

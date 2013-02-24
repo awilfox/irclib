@@ -1,5 +1,7 @@
-from irclib.common.numerics import *
 import base64
+
+from irclib.common.util import splitstr
+from irclib.common.numerics import *
 
 """ Authenticate to the server
 
@@ -21,8 +23,7 @@ def dispatch_sasl_authenticate(client, line):
         send = send.decode('ascii')
 
         # Split into 400 byte chunks
-        split = [send[i:i+400] for i in range(0, len(send), 400)]
-        for item in split:
+        for item in splitstr(send, 400):
             client.cmdwrite('AUTHENTICATE', [item])
  
         # Padding, if needed
