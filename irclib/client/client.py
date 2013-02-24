@@ -157,14 +157,14 @@ class IRCClient(IRCClientNetwork):
             dispatchers.append('cap')
 
             # Capabilities
-            self.cap_req = ['multi-prefix', 'account-notify',
-                            'away-notify', 'extended-join']
+            self.cap_req = {'multi-prefix', 'account-notify', 'away-notify',
+                            'away-notify', 'extended-join'}
 
             if self.use_starttls:
-                self.cap_req.append('tls')
+                self.cap_req.add('tls')
 
             if self.use_sasl:
-                self.cap_req.append('sasl')
+                self.cap_req.add('sasl')
 
         def module_add_hooks(module):
             imp = importlib.import_module(module)
@@ -245,10 +245,10 @@ class IRCClient(IRCClientNetwork):
             self.dispatch_register()
         elif self.use_cap:
             # Request caps
-            self.cmdwrite('CAP', ['REQ', ' '.join(self.cap_req)])
+            self.cmdwrite('CAP', ['LS'])
 
             # Cancel CAP after some time
-            self.timer_oneshot('cap_terminate', 15, self.terminate_cap)
+            self.timer_oneshot('cap_terminate', 10, self.terminate_cap)
 
 
     """ Terminate CAP """

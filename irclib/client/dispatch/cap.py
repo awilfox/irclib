@@ -1,7 +1,28 @@
 """ Dispatches CAP stuff """
 def dispatch_cap(client, line):
-    if line.params[1] == 'ACK':
-        dispatch_cap_ack(client, line)
+    dispatch = {
+        'ACK' : dispatch_cap_ack,
+        'LS' : dispatch_cap_ls,
+        'NAK' : dispatch_cap_nak,
+    }
+   
+    if line.params[1] in dispatch:
+        return dispatch[line.params[1]](client, line)
+
+
+def dispatch_cap_ls(client, line):
+    client.timer_cancel('cap_terminate')
+
+    # Request common caps
+    caps = line.params[-1].split()
+
+    common = ' '.join(client.cap_req.intersection(caps))
+
+    # Request common caps
+    client.cmdwrite('CAP', ('REQ', common))
+
+    # Restart the timer
+    client.timer_oneshot('cap_terminate', 10, client.terminate_cap)
 
 
 def dispatch_cap_ack(client, line):
@@ -17,6 +38,15 @@ def dispatch_cap_ack(client, line):
     else:
         # Register only if we don't need STARTTLS
         client.dispatch_register()
+
+
+def dispatch_cap_nak(client, line):
+    client.timer_cancel('cap_terminate')
+
+    client.logger.warn('caps could not be approved: {}'.format(
+        line.params[-1]))
+
+    client.terminate_cap()
 
 
 hooks_in = (
