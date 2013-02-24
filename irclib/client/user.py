@@ -14,4 +14,11 @@ class User:
 
         self.channels = weakref.WeakValueDictionary()
 
+    def channel_add(self, name, ch):
+        self.channels[name] = ch
+
+
+    def channel_del(self, name):
+        del self.channels[name]
+
 

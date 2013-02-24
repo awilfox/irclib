@@ -23,3 +23,16 @@ class Channel:
         # Are we parting the channel?
         self.parting = False
 
+
+    def user_add(self, nick, user):
+        self.users[nick] = user
+
+
+    def user_del(self, nick):
+        del self.users[nick]
+
+
+    def user_rename(self, oldnick, newnick):
+        self.users[newnick] = self.users[oldnick]
+        del self.users[oldnick]
+

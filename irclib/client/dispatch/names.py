@@ -1,3 +1,4 @@
+from irclib.client.user import User
 from irclib.common.numerics import *
 
 """ Dispatch names """
@@ -23,6 +24,18 @@ def dispatch_names(client, line):
         # Apply
         for m in mode:
             ch.modes.add_mode(m, name)
+
+        # Add the user
+        if name not in client.users:
+            client.users[name] = User(client, name)
+            # TODO: issue whois request
+
+        # Add channel to user
+        client.users[name].channels[ch.name] = ch
+
+        # Add user to channel
+        ch.user_add(name, client.users[name])
+
 
 
 hooks_in = (

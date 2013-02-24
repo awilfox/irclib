@@ -1,10 +1,40 @@
+from functools import partial
+
+""" Dispatch foreign user """
+def dispatch_other_part(client, line):
+    if not line.hostmask: return
+
+    if line.hostmask.nick != client.current_nick:
+        return
+
+    nick = line.hostmask.nick
+    channel = line.params[0]
+
+    if channel not in client.channels:
+        client.logger.critical('DESYNC detected! Part detected in a channel we '
+                               'did NOT know about!')
+        return
+
+    client.channels[channel].user_del(nick)
+
+    if nick not in client.users:
+        return
+
+    client.users[nick].channel_del(channel)
+
+    if len(client.users[nick].channels) == 0:
+        # Expire the user in 5 minutes 
+        expire = partial(lambda x: client.users.pop(x, None), nick)
+        timername = 'expire_user_{}'.format(nick)
+        client.timer_oneshot(timername, 300, expire)
+
+
 """ Dispatch us parting/being kicked """
 def dispatch_self_part(client, line):
     if not line.hostmask: return
 
-    # When proper nick tracking is implemented, uncomment this
-    #if line.hostmask.nick != client.current_nick:
-    #    return
+    if line.hostmask.nick != client.current_nick:
+        return
 
     channel = line.params[0]
     client.pending_channels.discard(channel)
