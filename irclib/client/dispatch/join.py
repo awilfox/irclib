@@ -13,7 +13,7 @@ def dispatch_other_join(client, line):
         return
 
     channel = line.params[0]
-    if len(params) > 1:
+    if len(line.params) > 1:
         # extended-join
         account = line.params[1]
         realname = line.params[2]
