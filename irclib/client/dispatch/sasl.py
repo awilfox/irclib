@@ -23,7 +23,8 @@ def dispatch_sasl_authenticate(client, line):
         send = send.decode('ascii')
 
         # Split into 400 byte chunks
-        for item in splitstr(send, 400):
+        split = splitstr(send, 400)
+        for item in split:
             client.cmdwrite('AUTHENTICATE', [item])
  
         # Padding, if needed

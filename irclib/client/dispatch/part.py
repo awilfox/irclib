@@ -72,7 +72,9 @@ def dispatch_pending_part(client, line):
         client.channels[channel].parting = True
 
 
-hooks_in = ( 
+hooks_in = (
+    ('PART', 0, dispatch_other_part),
+    ('KICK', 0, dispatch_other_part),
     ('PART', 5, dispatch_self_part),
     ('KICK', 5, dispatch_self_part),
 )
