@@ -75,8 +75,12 @@ class IRCClientNetwork(metaclass=ABCMeta):
         ret.extend(self.call_dispatch_out(None))
 
         if any(x[1] for x in ret):
-            self.logger.debug("Cancelled event due to hook request")
+            self.logger.debug('Cancelled event due to hook request')
             return
+
+        # Check also if the line's been cancelled
+        if line.cancelled:
+            self.logger.debug('Line cancelled due to hook')
 
         self.log_callback(line, False)
         self.send(bytes(line))

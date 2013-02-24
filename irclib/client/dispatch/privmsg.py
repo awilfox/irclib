@@ -50,6 +50,7 @@ def dispatch_ctcp(client, line):
         response = '\x01' + response + '\x01'
         client.cmdwrite('NOTICE', (target, response))
 
+
 hooks_in = (
     ('PRIVMSG', 0, dispatch_ctcp),
     ('PRIVMSG', 1, dispatch_privmsg),
