@@ -6,7 +6,7 @@ from socket import error as SocketError
 """ Generate a random string """
 def randomstr(minlen=6, maxlen=30):
     validstr = ascii_letters + digits + ' '
-    return ''.join([choice(validstr) for x in range(randint(minlen, maxlen))])
+    return ''.join(choice(validstr) for x in range(randint(minlen, maxlen)))
 
 
 """ Raise a socket error """

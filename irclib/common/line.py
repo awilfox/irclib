@@ -125,8 +125,7 @@ class Line:
         line, sep, lparam = line.partition(' :')
 
         # Split
-        sp = deque([x for x in line.split() if x is not None])
-
+        sp = deque(x for x in line.split() if x is not None)
 
         # Do we have tags?
         if sp[0].startswith('@'):
