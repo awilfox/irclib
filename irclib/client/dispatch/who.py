@@ -3,8 +3,10 @@ from irclib.common.numerics import *
 """ Dispatch who """
 def dispatch_who(client, line):
     try:
+        # Shift
+        params = line.params[1:]
         # Fucking eh, WHO is a crock of shit
-        channel, username, host, server, nick, status, other = line.params
+        channel, username, host, server, nick, status, other = params
     except ValueError:
         # I give up.
         client.logger.warn('Could not parse WHO reply ({})'.format(str(line)))
