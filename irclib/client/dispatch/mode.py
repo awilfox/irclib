@@ -11,14 +11,14 @@ def dispatch_mode(client, line):
 
 """ Dispatch timestamp setting """
 def dispatch_ts(client, line):
-    channel = self.params[1]
-    client.channels[channel].timestamp = int(self.params[-1])
+    channel = line.params[1]
+    client.channels[channel].timestamp = int(line.params[-1])
 
 
 """ Dispatch channel URL setting """
 def dispatch_url(client, line):
-    channel = self.params[1]
-    client.channels[channel].url = self.params[-1]
+    channel = line.params[1]
+    client.channels[channel].url = line.params[-1]
 
 
 hooks_in = (
