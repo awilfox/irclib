@@ -51,6 +51,8 @@ class IRCClientNetwork(object):
         self.dispatch_cmd_in = Dispatcher()
         self.dispatch_cmd_out = Dispatcher()
 
+        self.dispatch_ctcp_in = Dispatcher()
+
         # Our logger
         self.logger = logging.getLogger(__name__)
 
@@ -86,6 +88,18 @@ class IRCClientNetwork(object):
 
         self.log_callback(line, False)
         self.send(bytes(line))
+
+
+    """ Write a CTCP request to the wire """
+    def ctcpwrite(self, target, command, params=''):
+        response = u('\x01{} {}\x01').format(command, params)
+        self.cmdwrite('PRIVMSG', (target, response))
+
+
+    """ Write a CTCP reply to the wire """
+    def nctcpwrite(self, target, command, params=''):
+        response = u('\x01{} {}\x01').format(command, params)
+        self.cmdwrite('NOTICE', (target, response))
 
 
     """ Write a raw command to the wire """
@@ -158,10 +172,10 @@ class IRCClientNetwork(object):
     def call_dispatch_in(self, line):
         if line is None:
             if self.dispatch_cmd_in.has_name(None):
-                return self.dispatch_cmd_in.run(None, [self, line])
+                return self.dispatch_cmd_in.run(None, (self, line))
         else:
             if self.dispatch_cmd_in.has_name(line.command):
-                return self.dispatch_cmd_in.run(line.command, [self, line])
+                return self.dispatch_cmd_in.run(line.command, (self, line))
 
         return [(None, None)]
 
@@ -170,12 +184,21 @@ class IRCClientNetwork(object):
     def call_dispatch_out(self, line):
         if line is None:
             if self.dispatch_cmd_out.has_name(None):
-                return self.dispatch_cmd_out.run(None, [self, line])
+                return self.dispatch_cmd_out.run(None, (self, line))
         else:
             if self.dispatch_cmd_out.has_name(line.command):
-                return self.dispatch_cmd_out.run(line.command, [self, line])
+                return self.dispatch_cmd_out.run(line.command, (self, line))
         
         return [(None, None)]
+
+
+    """ Dispatch for CTCP incoming """
+    def call_ctcp_in(self, line, target, command, param):
+        print(repr(command))
+        if self.dispatch_ctcp_in.has_name(command):
+            print('Dispatch found!')
+            return self.dispatch_ctcp_in.run(command, (self, line, target,
+                                                       command, param))
 
 
     """ Add command dispatch for input
@@ -194,6 +217,12 @@ class IRCClientNetwork(object):
     """
     def add_dispatch_out(self, command, priority, function):
         self.dispatch_cmd_out.add(command, priority, function)
+
+
+    """ Add CTCP dispatch function """
+    def add_ctcp_in(self, command, priority, function):
+        print('add dispatch for ctcp', repr(command))
+        self.dispatch_ctcp_in.add(command, priority, function)
 
 
     """ Recieve and process lines """
