@@ -23,6 +23,10 @@ class Channel:
         # Are we parting the channel?
         self.parting = False
 
+        # Defaults
+        self.timestamp = 0
+        self.url = None
+
 
     def user_add(self, nick, user):
         self.users[nick] = user
