@@ -1,6 +1,5 @@
 from time import time, ctime
 from functools import partial
-from copy import deepcopy 
 
 from irclib.common.line import Line
 from irclib.common.util import splitstr
@@ -10,11 +9,18 @@ def dispatch_privmsg(client, line):
     if line.hostmask is None:
         return
 
-    if line.params[0] != client.current_nick:
-        return
-
     nick = line.hostmask.nick
 
+    if line.params[0] != client.current_nick:
+        # Update just in case (for old ircd's/hyperion)
+        user = line.hostmask.user
+        host = line.hostmask.host
+
+        if nick in self.users:
+            client.users[nick].user = user
+            client.users[nick].host = host
+
+    # Do expiry stuff
     if nick in client.users:
         # Re-up if needed
         if len(client.users[nick].channels) == 0:
