@@ -172,7 +172,7 @@ class Line:
             else:
                 line.extend(self.params)
 
-        return u(' '.join(line)) + u('\r\n')
+        return u(' ').join(line) + u('\r\n')
 
     def __bytes__(self):
         return str(self).encode('UTF-8')

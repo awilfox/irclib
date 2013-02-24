@@ -125,7 +125,7 @@ class IRCClient(IRCClientNetwork):
         else:
             ch = '<'
 
-        print(u('{} {}'.format(ch, line)), end='')
+        print('{} {}'.format(ch, line), end='')
 
 
     """ Generator for IRC lines, e.g. non-terminating stream """
@@ -303,6 +303,7 @@ class IRCClient(IRCClientNetwork):
             sbuf.append((chbuf, keybuf))
 
         for buf in sbuf:
-            channels, keys = u(','.join(buf[0])), u(' '.join(buf[1]))
+            channels = ','.join(buf[0])
+            keys = ' '.join(buf[1])
             self.cmdwrite('JOIN', (channels, keys))
 

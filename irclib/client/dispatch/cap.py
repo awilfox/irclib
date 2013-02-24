@@ -18,7 +18,7 @@ def dispatch_cap_ls(client, line):
     # Request common caps
     caps = line.params[-1].split()
 
-    common = u(' '.join(client.cap_req.intersection(caps)))
+    common = u(' ').join(client.cap_req.intersection(caps))
 
     if not common:
         # No common caps
