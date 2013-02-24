@@ -74,7 +74,7 @@ class IRCClient(IRCClientNetwork):
         self.isupport['CHANMODES'] = ['beI', 'k', 'l', 'imntsp']
        
         # Map prefix to mode
-        self.preifx_to_mode = {s:m for m,s in self.isupport['PREFIX']}
+        self.prefix_to_mode = {s:m for m,s in self.isupport['PREFIX']}
 
         # Default handlers
         self.default_dispatch()
@@ -142,7 +142,7 @@ class IRCClient(IRCClientNetwork):
         # Default list of dispatchers
         dispatchers = ['account', 'away', 'isupport', 'join', 'mode', 'names',
                        'nick', 'part', 'pingpong', 'privmsg', 'quit',
-                       'welcome']
+                       'welcome', 'who']
 
         if self.use_starttls:
             dispatchers.append('starttls')

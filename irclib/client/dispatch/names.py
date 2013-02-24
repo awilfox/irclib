@@ -17,11 +17,11 @@ def dispatch_names(client, line):
             keepscan = False
 
             # Check for prefix
-            if name[0] in client.preifx_to_mode:
+            if name[0] in client.prefix_to_mode:
                 # Shift
                 prefix = name[0]
                 name = name[1:]
-                mode += client.prefix.to.mode[prefix]
+                mode += client.prefix_to_mode[prefix]
 
                 # We found one. There could be another, thus
                 keepscan = True # look for more

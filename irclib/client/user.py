@@ -16,6 +16,9 @@ class User:
         self.away = None
         self.away_message = None
 
+        # Is this user an IRC op?
+        self.operator = None
+
         self.channels = weakref.WeakValueDictionary()
 
     def channel_add(self, name, ch):
