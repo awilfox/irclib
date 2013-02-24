@@ -69,6 +69,9 @@ def reset_colour(isbold=False, isunderline=False):
     return ''.join(fmt)
 
 def replace_colours(message):
+    if message.startswith('\x01') or message.endswith('\x01'):
+        return message
+
     # Start of colour position
     colour_start = None
 
@@ -77,6 +80,7 @@ def replace_colours(message):
     colourfg = None
     colourbg = None
 
+    oldmessage = message
     newmessage = []
     for index, char in enumerate(message):
         if char == '\x03':
@@ -141,7 +145,9 @@ def replace_colours(message):
         # Add to the string
         newmessage.append(char)
 
-    # Reset
-    newmessage.append(reset_colour())
+    # Reset term
+    newmessage = u('').join(newmessage)
+    if newmessage != oldmessage:
+        newmessage += reset_colour()
 
-    return u('').join(newmessage)
+    return newmessage

@@ -111,6 +111,9 @@ class Line:
         if line is not None:
             self.__parse_line(line)
 
+        # In case they're not mutable
+        self.params = list(self.params)
+
         self.cancelled = False
 
     def __parse_line(self, line, encoding='UTF-8'):
