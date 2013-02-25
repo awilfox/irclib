@@ -151,9 +151,9 @@ class IRCClient(IRCClientNetwork):
     """
     def default_dispatch(self):
         # Default list of dispatchers
-        dispatchers = ['account', 'away', 'isupport', 'join', 'mode', 'names',
-                       'nick', 'part', 'pingpong', 'privmsg', 'quit', 'topic',
-                       'welcome', 'who']
+        dispatchers = ['account', 'away', 'introspect', 'isupport', 'join',
+                       'mode', 'names', 'nick', 'part', 'pingpong', 'privmsg',
+                       'quit', 'topic', 'welcome', 'who']
 
         if self.use_starttls:
             dispatchers.append('starttls')
@@ -231,6 +231,11 @@ class IRCClient(IRCClientNetwork):
         # Authoriative
         self.channels = dict()
         self.users = dict()
+
+        # Our own stuff
+        self.current_nick = None
+        self.current_user = None
+        self.current_host = None
 
 
     """ Write the user/nick line """
