@@ -205,6 +205,7 @@ class IRCClient(IRCClientNetwork):
     def reset(self):
         # umodes
         self.umodes = ModeSet()
+        self.snomask = None
 
         # Pending channels
         self.pending_channels = set()
@@ -222,6 +223,14 @@ class IRCClient(IRCClientNetwork):
         self._last_pingstr = None
         self._last_pingtime = 0
         self.lag = 0
+
+        # Nick trials
+        if hasattr(self, '_nick_trycount'):
+            del self._nick_trycount
+
+        # For privmsg
+        if hasattr(self, '_msg_last'):
+            del self._msg_last
 
         # Pending WHOX replies
         self._whox_pending = set()
