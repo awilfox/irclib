@@ -66,6 +66,10 @@ class IRCClient(IRCClientNetwork):
             self.logger.warn("Enabling CAP because starttls and/or sasl requested")
             self.use_cap = True
 
+        self.pending_channels = set()
+        self.isupport = dict()
+        self._whox_pending = set()
+
         # Default handlers
         self.default_dispatch()
 
@@ -192,13 +196,13 @@ class IRCClient(IRCClientNetwork):
         self.snomask = None
 
         # Pending channels
-        self.pending_channels = set()
+        self.pending_channels.clear() 
 
         # Reset caps
         self.supported_cap = []
 
         # Reset ISUPPORT
-        self.isupport = {}
+        self.isupport.clear() 
 
         # Defaults for ancient-ass servers
         self.isupport['PREFIX'] = [('o', '@'), ('v', '+')]
@@ -230,7 +234,7 @@ class IRCClient(IRCClientNetwork):
             del self._msg_last
 
         # Pending WHOX replies
-        self._whox_pending = set()
+        self._whox_pending.clear()
 
         try:
             self.timer_cancel_all()

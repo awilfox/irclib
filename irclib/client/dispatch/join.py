@@ -1,9 +1,10 @@
+from random import randint
+from functools import partial
+
+from irclib.common.dispatch import PRIORITY_DEFAULT
 from irclib.client.user import User
 from irclib.client.channel import Channel
 from irclib.common.numerics import *
-
-from random import randint
-from functools import partial
 
 """ Dispatch other user join """
 def dispatch_other_join(client, line):
@@ -60,7 +61,7 @@ def dispatch_client_join(client, line):
             client.identified = False
 
     if channel not in client.channels:
-        client.channels[channel] = Channel(client, channel, client.isupport)
+        client.channels[channel] = Channel(channel, client.isupport)
 
     # Request modes
     client.cmdwrite('MODE', [channel])
@@ -124,22 +125,22 @@ def dispatch_url(client, line):
 
 
 hooks_in = (
-    ('JOIN', 0, dispatch_other_join),
+    ('JOIN', PRIORITY_DEFAULT, dispatch_other_join),
     ('JOIN', 5, dispatch_client_join),
-    (ERR_LINKCHANNEL, 0, dispatch_err_join),
-    (ERR_CHANNELISFULL, 0, dispatch_err_join),
-    (ERR_INVITEONLYCHAN, 0, dispatch_err_join),
-    (ERR_BANNEDFROMCHAN, 0, dispatch_err_join),
-    (ERR_BADCHANNELKEY, 0, dispatch_err_join),
-    (ERR_NEEDREGGEDNICK, 0, dispatch_err_join),
-    (ERR_BADCHANNAME, 0, dispatch_err_join),
-    (ERR_THROTTLE, 0, dispatch_err_join),
-    (ERR_KEYSET, 0, dispatch_err_join),
-    (RPL_CREATIONTIME, 0, dispatch_ts),
-    (RPL_CHANNELURL, 0, dispatch_url),
+    (ERR_LINKCHANNEL, PRIORITY_DEFAULT, dispatch_err_join),
+    (ERR_CHANNELISFULL, PRIORITY_DEFAULT, dispatch_err_join),
+    (ERR_INVITEONLYCHAN, PRIORITY_DEFAULT, dispatch_err_join),
+    (ERR_BANNEDFROMCHAN, PRIORITY_DEFAULT, dispatch_err_join),
+    (ERR_BADCHANNELKEY, PRIORITY_DEFAULT, dispatch_err_join),
+    (ERR_NEEDREGGEDNICK, PRIORITY_DEFAULT, dispatch_err_join),
+    (ERR_BADCHANNAME, PRIORITY_DEFAULT, dispatch_err_join),
+    (ERR_THROTTLE, PRIORITY_DEFAULT, dispatch_err_join),
+    (ERR_KEYSET, PRIORITY_DEFAULT, dispatch_err_join),
+    (RPL_CREATIONTIME, PRIORITY_DEFAULT, dispatch_ts),
+    (RPL_CHANNELURL, PRIORITY_DEFAULT, dispatch_url),
 )
 
 hooks_out = ( 
-    ('JOIN', 5, dispatch_pending_join),
+    ('JOIN', PRIORITY_DEFAULT, dispatch_pending_join),
 )
 

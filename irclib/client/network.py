@@ -223,15 +223,21 @@ class IRCClientNetwork(object):
         self.dispatch_ctcp_in.add(command, priority, function)
 
 
-    """ Recieve and process lines """
+    """ Recieve and process lines (blocking version) """
     def process_in(self):
         if not self.connected:
             self.connect()
-        lines = [Line(line=line) for line in self.recv()]
+
+        return self.process_lines(self.recv())
+
+
+    """ Process lines for real """
+    def process_lines(self, lines):
+        lines = [Line(line=line) for line in lines]
 
         for line in lines:
-            self.log_callback(line, True)
             self.call_dispatch_in(line)
+            self.log_callback(line, True)
 
         return lines
 

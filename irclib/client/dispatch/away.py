@@ -1,3 +1,5 @@
+from irclib.common.dispatch import PRIORITY_DEFAULT
+
 """ Implement AWAY notifications """
 def dispatch_away(client, line):
     if line.hostmask is None: return
@@ -20,5 +22,6 @@ def dispatch_away(client, line):
 
 
 hooks_in = (
-    ('AWAY', 0, dispatch_away),
+    ('AWAY', PRIORITY_DEFAULT, dispatch_away),
 )
+

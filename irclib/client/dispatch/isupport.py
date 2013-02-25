@@ -1,5 +1,6 @@
 import re
 
+from irclib.common.dispatch import PRIORITY_DEFAULT
 from irclib.common.numerics import *
 
 def dispatch_isupport(client, line):
@@ -72,5 +73,5 @@ def dispatch_isupport(client, line):
 
 
 hooks_in = (
-    (RPL_ISUPPORT, 0, dispatch_isupport),
+    (RPL_ISUPPORT, PRIORITY_DEFAULT, dispatch_isupport),
 )

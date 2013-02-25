@@ -1,5 +1,7 @@
 from functools import partial
 
+from irclib.common.dispatch import PRIORITY_DEFAULT
+
 """ Dispatch foreign user """
 def dispatch_other_part(client, line):
     if not line.hostmask: return
@@ -73,13 +75,13 @@ def dispatch_pending_part(client, line):
 
 
 hooks_in = (
-    ('PART', 0, dispatch_other_part),
-    ('KICK', 0, dispatch_other_part),
-    ('PART', 5, dispatch_self_part),
-    ('KICK', 5, dispatch_self_part),
+    ('PART', PRIORITY_DEFAULT, dispatch_other_part),
+    ('KICK', PRIORITY_DEFAULT, dispatch_other_part),
+    ('PART', PRIORITY_DEFAULT, dispatch_self_part),
+    ('KICK', PRIORITY_DEFAULT, dispatch_self_part),
 )
 
 hooks_out = (
-    ('PART', 0, dispatch_pending_part),
+    ('PART', PRIORITY_DEFAULT, dispatch_pending_part),
 )
 

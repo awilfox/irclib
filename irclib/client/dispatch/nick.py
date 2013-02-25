@@ -1,5 +1,6 @@
 from random import randint
 
+from irclib.common.dispatch import PRIORITY_DEFAULT
 from irclib.client.user import User
 from irclib.common.numerics import *
 
@@ -91,8 +92,8 @@ def dispatch_alt_nick(client, line):
 
 
 hook_in = (
-    ('NICK', 0, dispatch_nick),
-    (ERR_ERRONEUSNICKNAME, 0, dispatch_alt_nick),
-    (ERR_NICKNAMEINUSE, 0, dispatch_alt_nick),
+    ('NICK', PRIORITY_DEFAULT, dispatch_nick),
+    (ERR_ERRONEUSNICKNAME, PRIORITY_DEFAULT, dispatch_alt_nick),
+    (ERR_NICKNAMEINUSE, PRIORITY_DEFAULT, dispatch_alt_nick),
 )
 

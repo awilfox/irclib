@@ -1,8 +1,10 @@
 from time import time, ctime
 from functools import partial
+from copy import deepcopy
 
+from irclib.common.dispatch import PRIORITY_DEFAULT, PRIORITY_LOW
 from irclib.client.user import User
-from irclib.common.line import Line
+from irclib.common.line import Line, Hostmask
 from irclib.common.util import splitstr
 
 """ Expire a user in 5 minutes """
@@ -113,35 +115,53 @@ def dispatch_split_msg(client, line):
         # CTCP. don't touch.
         return
 
-    # XXX - could cram more in...
-    # That will require self hostname tracking though. :p
-    if len(message) > 450:
-        split = splitstr(message, 450)
+    if client.current_host and client.current_user:
+        # Compute the maximum possible length
+        if not line.hostmask:
+            # Create a hostmask object
+            # Servers will truncate lines sent to other users, so let's look at
+            # it like they will.
+            line.hostmask = Hostmask(client.current_nick, client.current_user,
+                                     client.current_host)
+
+        # Length of the bare command
+        startlen = len(str(line)) - len(line.params[-1])
+
+        # Maximum line length
+        # Why 510? crlf
+        maxlen = 510 - startlen
+    else:
+        # Conservative default
+        maxlen = 300
+
+    if len(message) > maxlen:
+        split = splitstr(message, maxlen)
         buf = []
         for msg in split:
-            line.params[-1] = msg
-            client.linewrite(line)
+            newline = deepcopy(line)
+            newline.params[-1] = msg
+            client.linewrite(newline)
 
-        line.params[-1] = message
         line.cancelled = True
         return True
 
 
 hooks_in = (
-    ('PRIVMSG', 0, dispatch_ctcp),
-    ('PRIVMSG', 1, dispatch_privmsg),
+    ('PRIVMSG', PRIORITY_DEFAULT, dispatch_ctcp),
+    ('PRIVMSG', PRIORITY_LOW, dispatch_privmsg),
 )
 
 hooks_out = (
-    ('PRIVMSG', 0, dispatch_split_msg),
-    ('PRIVMSG', 1, dispatch_pace_msg),
-    ('NOTICE', 0, dispatch_split_msg),
-    ('NOTICE', 1, dispatch_pace_msg),
+    ('PRIVMSG', PRIORITY_LOW, dispatch_split_msg),
+    ('PRIVMSG', PRIORITY_LOW, dispatch_pace_msg),
+    ('NOTICE', PRIORITY_LOW, dispatch_split_msg),
+    ('NOTICE', PRIORITY_LOW, dispatch_pace_msg),
 )
 
 hooks_ctcp_in = (
-    ('VERSION', 0, dispatch_ctcp_version),
-    ('TIME', 0, dispatch_ctcp_time),
-    ('PING', 0, dispatch_ctcp_ping),
+    ('VERSION', PRIORITY_DEFAULT, dispatch_ctcp_version),
+    ('TIME', PRIORITY_DEFAULT, dispatch_ctcp_time),
+    ('PING', PRIORITY_DEFAULT, dispatch_ctcp_ping),
 )
+
 

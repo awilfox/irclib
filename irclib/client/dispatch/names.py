@@ -1,3 +1,4 @@
+from irclib.common.dispatch import PRIORITY_DEFAULT
 from irclib.client.user import User
 from irclib.common.numerics import *
 
@@ -42,6 +43,6 @@ def dispatch_names(client, line):
 
 
 hooks_in = (
-    (RPL_NAMREPLY, 0, dispatch_names),
+    (RPL_NAMREPLY, PRIORITY_DEFAULT, dispatch_names),
 )
 

@@ -1,3 +1,4 @@
+from irclib.common.dispatch import PRIORITY_DEFAULT
 from irclib.client.user import User
 
 """ Do account-notify stuff """
@@ -19,5 +20,6 @@ def dispatch_account(client, line):
 
 
 hooks_in = (
-    ('ACCOUNT', 0, dispatch_account),
+    ('ACCOUNT', PRIORITY_DEFAULT, dispatch_account),
 )
+

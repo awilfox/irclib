@@ -1,5 +1,7 @@
-from irclib.common.numerics import *
 from time import time 
+
+from irclib.common.dispatch import PRIORITY_DEFAULT
+from irclib.common.numerics import *
 
 """ Dispatch the channel topic """
 def dispatch_rpl_topic(client, line):
@@ -45,7 +47,7 @@ def dispatch_topic(client, line):
 
 
 hooks_in = (
-    (RPL_TOPIC, 0, dispatch_rpl_topic),
-    (RPL_TOPICWHOTIME, 0, dispatch_rpl_topictime),
-    ('TOPIC', 0, dispatch_topic),
+    (RPL_TOPIC, PRIORITY_DEFAULT, dispatch_rpl_topic),
+    (RPL_TOPICWHOTIME, PRIORITY_DEFAULT, dispatch_rpl_topictime),
+    ('TOPIC', PRIORITY_DEFAULT, dispatch_topic),
 )

@@ -1,3 +1,4 @@
+from irclib.common.dispatch import PRIORITY_DEFAULT
 from irclib.common.six import u, b
 
 """ Dispatches CAP stuff """
@@ -56,6 +57,6 @@ def dispatch_cap_nak(client, line):
 
 
 hooks_in = (
-    ('CAP', 0, dispatch_cap),
+    ('CAP', PRIORITY_DEFAULT, dispatch_cap),
 )
 

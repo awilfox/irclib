@@ -1,3 +1,4 @@
+from irclib.common.dispatch import PRIORITY_DEFAULT
 from irclib.common.numerics import *
 
 """ Dispatch STARTTLS """
@@ -16,7 +17,7 @@ def dispatch_starttls_fail(client, line):
 
 
 hooks_in = (
-    (RPL_STARTTLS, 0, dispatch_starttls),
-    (ERR_STARTTLS, 0, dispatch_starttls_fail),
+    (RPL_STARTTLS, PRIORITY_DEFAULT, dispatch_starttls),
+    (ERR_STARTTLS, PRIORITY_DEFAULT, dispatch_starttls_fail),
 )
 

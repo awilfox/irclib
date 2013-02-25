@@ -1,5 +1,6 @@
 import base64
 
+from irclib.common.dispatch import PRIORITY_DEFAULT
 from irclib.common.util import splitstr
 from irclib.common.numerics import *
 
@@ -55,10 +56,10 @@ def dispatch_sasl_error(client, line):
 
 
 hooks_in = ( 
-    ('AUTHENTICATE', 0, dispatch_sasl_authenticate),
-    (RPL_LOGGEDIN, 0, dispatch_sasl_success),
-    (RPL_SASLSUCCESS, 0, dispatch_sasl_success),
-    (ERR_SASLFAIL, 0, dispatch_sasl_error),
-    (ERR_SASLTOOLONG, 0, dispatch_sasl_error),
+    ('AUTHENTICATE', PRIORITY_DEFAULT, dispatch_sasl_authenticate),
+    (RPL_LOGGEDIN, PRIORITY_DEFAULT, dispatch_sasl_success),
+    (RPL_SASLSUCCESS, PRIORITY_DEFAULT, dispatch_sasl_success),
+    (ERR_SASLFAIL, PRIORITY_DEFAULT, dispatch_sasl_error),
+    (ERR_SASLTOOLONG, PRIORITY_DEFAULT, dispatch_sasl_error),
 )
 

@@ -1,3 +1,4 @@
+from irclib.common.dispatch import PRIORITY_DEFAULT
 from irclib.common.numerics import *
 from irclib.common.util import randomstr
 
@@ -33,6 +34,6 @@ def dispatch_welcome(client, line):
 
 
 hooks_in = ( 
-    (RPL_WELCOME, 0, dispatch_welcome),
+    (RPL_WELCOME, PRIORITY_DEFAULT, dispatch_welcome),
 )
 

@@ -1,3 +1,4 @@
+from irclib.common.dispatch import PRIORITY_DEFAULT
 from irclib.common.six import u, b
 from irclib.common.numerics import *
 
@@ -11,7 +12,8 @@ def dispatch_mode(client, line):
     target = line.params[0]
     if target == client.current_nick:
         # Us
-        client.umodes.parse_modestring(line.params[1:])
+        modestring = u(' ').join(line.params[1:])
+        client.umodes.parse_modestring(modestring)
         return
 
     ch = client.channels.get(target, None)
@@ -31,8 +33,8 @@ def dispatch_rpl_mode(client, line):
 
 
 hooks_in = (
-    (RPL_SNOMASK, 0, dispatch_snomask),
-    ('MODE', 0, dispatch_mode),
-    (RPL_CHANNELMODEIS, 0, dispatch_rpl_mode),
+    (RPL_SNOMASK, PRIORITY_DEFAULT, dispatch_snomask),
+    ('MODE', PRIORITY_DEFAULT, dispatch_mode),
+    (RPL_CHANNELMODEIS, PRIORITY_DEFAULT, dispatch_rpl_mode),
 )
 

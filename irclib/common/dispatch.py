@@ -1,5 +1,13 @@
 from collections import defaultdict, namedtuple
 
+PRIORITY_LOW = 6
+PRIORITY_DECREASED = 5
+PRIORITY_DEFAULT = 4
+PRIORITY_ELEVATED = 3
+PRIORITY_HIGH = 2
+PRIORITY_CRITICAL = 1
+PRIORITY_FIRST = 0
+
 class Dispatcher:
     DispatchItem = namedtuple('dispatchitem', 'priority uid function')
 

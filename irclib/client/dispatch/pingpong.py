@@ -1,5 +1,7 @@
 from time import time
 
+from irclib.common.dispatch import PRIORITY_DEFAULT
+
 """ Generic dispatcher for ping """
 def dispatch_ping(client, line):
     client.cmdwrite('PONG', line.params)
@@ -19,7 +21,7 @@ def dispatch_pong(client, line):
 
 
 hooks_in = (
-    ('PING', 0, dispatch_ping),
-    ('PONG', 0, dispatch_pong),
+    ('PING', PRIORITY_DEFAULT, dispatch_ping),
+    ('PONG', PRIORITY_DEFAULT, dispatch_pong),
 )
 

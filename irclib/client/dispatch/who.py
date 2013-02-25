@@ -1,3 +1,4 @@
+from irclib.common.dispatch import PRIORITY_DEFAULT
 from irclib.common.numerics import *
 
 """ Parse flags in WHO """
@@ -125,8 +126,8 @@ def dispatch_end_whox(client, line):
 
 
 hooks_in = (
-    (RPL_WHOREPLY, 0, dispatch_who),
-    (RPL_WHOSPCRPL, 0, dispatch_whox),
-    (RPL_ENDOFWHO, 0, dispatch_end_whox),
+    (RPL_WHOREPLY, PRIORITY_DEFAULT, dispatch_who),
+    (RPL_WHOSPCRPL, PRIORITY_DEFAULT, dispatch_whox),
+    (RPL_ENDOFWHO, PRIORITY_DEFAULT, dispatch_end_whox),
 )
 

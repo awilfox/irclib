@@ -1,3 +1,5 @@
+from irclib.common.dispatch import PRIORITY_DEFAULT
+
 """ Dispatch quitting """
 def dispatch_quit(client, line):
     if line.hostmask.nick == client.current_nick:
@@ -10,6 +12,6 @@ def dispatch_quit(client, line):
 
 
 hooks_in = (
-    ('QUIT', 0, dispatch_quit),
+    ('QUIT', PRIORITY_DEFAULT, dispatch_quit),
 )
 

@@ -1,4 +1,5 @@
 from irclib.common.numerics import *
+from irclib.common.dispatch import PRIORITY_DEFAULT, PRIORITY_FIRST
 
 """ Generic introspection routine to learn about ourself """
 def dispatch_introspect(client, line):
@@ -24,7 +25,7 @@ def dispatch_sethost(client, line):
 
 
 hooks_in = (
-    (None, 100, dispatch_introspect),
-    (RPL_HOSTHIDDEN, 0, dispatch_sethost),
+    (None, PRIORITY_FIRST, dispatch_introspect),
+    (RPL_HOSTHIDDEN, PRIORITY_DEFAULT, dispatch_sethost),
 )
 
