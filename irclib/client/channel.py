@@ -4,8 +4,7 @@ import weakref
 from irclib.common.modes import ModeSet
 
 class Channel(object):
-    def __init__(self, network, name):
-        self.network = network
+    def __init__(self, name, isupport):
         self.name = name
 
         self.users = weakref.WeakValueDictionary()
@@ -14,8 +13,8 @@ class Channel(object):
         # Note there is a race here - if you instantiate this, and ISUPPORT is
         # not in yet, you WILL get incorrect modes until you update this. YOU
         # HAVE BEEN WARNED.
-        p_prefix = ''.join(p[0] for p in network.isupport['PREFIX'])
-        p_list, p_set, p_both, = network.isupport['CHANMODES'][:3]
+        p_prefix = ''.join(p[0] for p in isupport['PREFIX'])
+        p_list, p_set, p_both, = isupport['CHANMODES'][:3]
 
         self.modes = ModeSet(p_list=p_list, p_set=p_set, p_both=p_both,
                              p_prefix=p_prefix)

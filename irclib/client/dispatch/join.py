@@ -49,46 +49,50 @@ def dispatch_client_join(client, line):
     if line.hostmask.nick != client.current_nick:
         return
 
-    # Probably not gonna happen but better safe than sorry. :P
-    chlist = line.params[0].split(',')
-    if client.pending_channels.issuperset(chlist):
-        client.pending_channels.difference_update(chlist)
+    channel = line.params[0]
+    client.pending_channels.discard(channel)
 
-    # Add the channel
-    for channel in chlist:
-        client.channels[channel] = Channel(client, channel)
+    if len(line.params) > 1:
+        account = line.params[1]
+        if account == '*':
+            # Well shit. We've been logged out. :(
+            client.logger.warn('We\'ve been logged out!')
+            client.identified = False
 
-        # Request modes
-        client.cmdwrite('MODE', [channel])
+    if channel not in client.channels:
+        client.channels[channel] = Channel(client, channel, client.isupport)
 
-        if 'WHOX' in client.isupport:
+    # Request modes
+    client.cmdwrite('MODE', [channel])
+
+    if 'WHOX' in client.isupport:
+        num = randint(0, 999)
+        count = 0
+        while num in client._whox_pending:
             num = randint(0, 999)
-            count = 0
-            while num in client._whox_pending:
-                num = randint(0, 999)
-                count += 1
-                if count > 1024: return
+            count += 1
+            if count > 1024: return
 
-            client._whox_pending.add(num)
+        client._whox_pending.add(num)
 
-            num = str(num)
-            whoparam = (channel, '%tcuisnflar,'+num)
-        else:
-            whoparam = (channel,)
+        num = str(num)
+        whoparam = (channel, '%tcuisnflar,'+num)
+    else:
+        whoparam = (channel,)
 
-        whofunc = partial(client.cmdwrite, 'WHO', whoparam)
+    whofunc = partial(client.cmdwrite, 'WHO', whoparam)
 
-        # I'm gonna need bout tree fiddy (seconds)
-        # No but seriously, this is a load-lessening measure
-        wait = randint(30, 60)
+    # I'm gonna need bout tree fiddy (seconds)
+    # No but seriously, this is a load-lessening measure
+    wait = randint(30, 60)
 
-        # Initial who request
-        client.timer_oneshot('sendwho_{}'.format(channel), wait/10, whofunc)
+    # Initial who request
+    client.timer_oneshot('sendwho_{}'.format(channel), wait/10, whofunc)
         
-        if not all(x in client.supported_cap for x in ('away-notify',
-                                                       'account-notify')):
-            # Add a recurring check if needed 
-            client.timer_repeat('sendwho_r_{}'.format(channel), wait, whofunc)
+    if not all(x in client.supported_cap for x in ('away-notify',
+                                                   'account-notify')):
+        # Add a recurring check if needed 
+        client.timer_repeat('sendwho_r_{}'.format(channel), wait, whofunc)
 
 
 """ Dispatch errors joining """
