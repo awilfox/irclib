@@ -46,7 +46,7 @@ class IRCClient(IRCClientNetwork):
         self.password = kwargs.get('password', None)
         self.default_channels = kwargs.get('channels', [])
         self.channel_keys = kwargs.get('channel_keys', {})
-        self.keepalive = kwargs.get('keepalive', 15)
+        self.keepalive = kwargs.get('keepalive', 30)
         self.use_cap = kwargs.get('use_cap', True)
         self.use_sasl = kwargs.get('use_sasl', False)
         self.sasl_username = kwargs.get('sasl_username', None)
