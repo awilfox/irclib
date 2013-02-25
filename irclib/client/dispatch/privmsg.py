@@ -79,7 +79,7 @@ def dispatch_ctcp_ping(client, line, target, command, param):
 
 """ Dispatch CTCP FINGER """
 def dispatch_ctcp_finger(client, line, target, command, param):
-    client.nctcpwrite(target, command, self.current_nick)
+    client.nctcpwrite(target, command, client.current_nick)
 
 
 """ Do some buffering """

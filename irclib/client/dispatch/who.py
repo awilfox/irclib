@@ -64,7 +64,7 @@ def dispatch_who(client, line):
 def dispatch_whox(client, line):
     # Check param count
     if len(line.params) != 11:
-        self.logger.debug('Wrong param count for WHOX')
+        client.logger.debug('Wrong param count for WHOX')
         return
 
     # Shift

@@ -1,6 +1,6 @@
 """ Dispatch quitting """
 def dispatch_quit(client, line):
-    if line.hostmask.nick == self.current_nick:
+    if line.hostmask.nick == client.current_nick:
         client.logger.info('Quitting network')
         return
 

@@ -3,7 +3,7 @@ def dispatch_away(client, line):
     if line.hostmask is None: return
 
     nick = line.hostmask.nick
-    if nick == self.current_nick:
+    if nick == client.current_nick:
         # o_O
         return
 

@@ -22,7 +22,7 @@ def dispatch_cap_ls(client, line):
 
     if not common:
         # No common caps
-        self.cap_terminate()
+        client.cap_terminate()
 
     # Request common caps
     client.cmdwrite('CAP', ('REQ', common))
