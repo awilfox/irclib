@@ -66,22 +66,6 @@ class IRCClient(IRCClientNetwork):
             self.logger.warn("Enabling CAP because starttls and/or sasl requested")
             self.use_cap = True
 
-        # Identified with nickserv
-        self.identified = False
-
-        # ISUPPORT storage
-        self.isupport = dict()
-
-        # Defaults for ancient-ass servers
-        self.isupport['PREFIX'] = [('o', '@'), ('v', '+')]
-        self.isupport['CHANTYPES'] = '#&!+' # Old servers tend to use these.
-        self.isupport['NICKLEN'] = 8 # Olden servers
-        # Not sure if this is correct but it's good enough
-        self.isupport['CHANMODES'] = ['beI', 'k', 'l', 'imntsp']
-       
-        # Map prefix to mode
-        self.prefix_to_mode = {s:m for m,s in self.isupport['PREFIX']}
-
         # Default handlers
         self.default_dispatch()
 
@@ -212,6 +196,19 @@ class IRCClient(IRCClientNetwork):
 
         # Reset caps
         self.supported_cap = []
+
+        # Reset ISUPPORT
+        self.isupport = {}
+
+        # Defaults for ancient-ass servers
+        self.isupport['PREFIX'] = [('o', '@'), ('v', '+')]
+        self.isupport['CHANTYPES'] = '#&!+' # Old servers tend to use these.
+        self.isupport['NICKLEN'] = 8 # Olden servers
+        # Not sure if this is correct but it's good enough
+        self.isupport['CHANMODES'] = ['beI', 'k', 'l', 'imntsp']
+       
+        # Map prefix to mode
+        self.prefix_to_mode = {s:m for m,s in self.isupport['PREFIX']}
 
         # Registered?
         self.registered = False
