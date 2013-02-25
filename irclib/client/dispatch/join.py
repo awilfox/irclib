@@ -107,6 +107,18 @@ def dispatch_pending_join(client, line):
     client.pending_channels.update(chlist)
 
 
+""" Dispatch timestamp setting """
+def dispatch_ts(client, line):
+    channel = line.params[1]
+    client.channels[channel].timestamp = int(line.params[-1])
+
+
+""" Dispatch channel URL setting """
+def dispatch_url(client, line):
+    channel = line.params[1]
+    client.channels[channel].url = line.params[-1]
+
+
 hooks_in = (
     ('JOIN', 0, dispatch_other_join),
     ('JOIN', 5, dispatch_client_join),
@@ -119,6 +131,8 @@ hooks_in = (
     (ERR_BADCHANNAME, 0, dispatch_err_join),
     (ERR_THROTTLE, 0, dispatch_err_join),
     (ERR_KEYSET, 0, dispatch_err_join),
+    (RPL_CREATIONTIME, 0, dispatch_ts),
+    (RPL_CHANNELURL, 0, dispatch_url),
 )
 
 hooks_out = ( 

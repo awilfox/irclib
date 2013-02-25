@@ -5,6 +5,7 @@ from irclib.common.numerics import *
 def dispatch_snomask(client, line):
     client.snomask = line.params[1][1:]
 
+
 """ Dispatch MODE for channel/user """
 def dispatch_mode(client, line):
     target = line.params[0]
@@ -19,6 +20,7 @@ def dispatch_mode(client, line):
     modestring = u(' ').join(line.params[1:])
     ch.modes.parse_modestring(modestring)
 
+
 """ Dispatch mode setting """
 def dispatch_rpl_mode(client, line):
     ch = client.channels.get(line.params[1], None)
@@ -28,23 +30,9 @@ def dispatch_rpl_mode(client, line):
     ch.modes.parse_modestring(modestring)
 
 
-""" Dispatch timestamp setting """
-def dispatch_ts(client, line):
-    channel = line.params[1]
-    client.channels[channel].timestamp = int(line.params[-1])
-
-
-""" Dispatch channel URL setting """
-def dispatch_url(client, line):
-    channel = line.params[1]
-    client.channels[channel].url = line.params[-1]
-
-
 hooks_in = (
     (RPL_SNOMASK, 0, dispatch_snomask),
     ('MODE', 0, dispatch_mode),
     (RPL_CHANNELMODEIS, 0, dispatch_rpl_mode),
-    (RPL_CREATIONTIME, 0, dispatch_ts),
-    (RPL_CHANNELURL, 0, dispatch_url),
 )
 
