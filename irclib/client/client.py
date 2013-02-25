@@ -8,7 +8,7 @@ import logging
 from copy import deepcopy
 
 from irclib.client.network import IRCClientNetwork
-from irclib.common.dispatch import Dispatcher
+from irclib.common.modes import ModeSet
 from irclib.common.timer import Timer
 from irclib.common.six import u, b
 from irclib.common.colourmap import replace_colours
@@ -203,6 +203,9 @@ class IRCClient(IRCClientNetwork):
 
     """ Reset everything """
     def reset(self):
+        # umodes
+        self.umodes = ModeSet()
+
         # Pending channels
         self.pending_channels = set()
 
