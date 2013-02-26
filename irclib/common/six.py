@@ -298,6 +298,8 @@ else:
     def b(s):
         return s
     def u(s):
+        if isinstance(s, unicode):
+            return s
         return unicode(s, "unicode_escape")
     int2byte = chr
     import StringIO
