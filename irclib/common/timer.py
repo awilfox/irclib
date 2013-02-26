@@ -1,7 +1,7 @@
 """ An implementation of timers using the threading module. """
 
 from threading import Timer as _Timer
-from threading import Lock
+from threading import RLock
 
 class TimerItem:
     def __init__(self, timer, time, repeat, function, args=[], kwargs={}):
@@ -21,7 +21,7 @@ class TimerItem:
 class Timer:
     def __init__(self):
         self.timers = dict()
-        self.timerlock = Lock()
+        self.timerlock = RLock()
 
 
     def __timer_wrap(self, name):
