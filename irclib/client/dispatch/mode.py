@@ -4,7 +4,10 @@ from irclib.common.numerics import *
 
 """ Dispatch SNOMASK storage """
 def dispatch_snomask(client, line):
-    client.snomask = line.params[1][1:]
+    if len(line.params) <= 1:
+        client.snomask = ''
+    else:
+        client.snomask = line.params[1][1:]
 
 
 """ Dispatch MODE for channel/user """
