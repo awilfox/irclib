@@ -25,30 +25,33 @@ class Timer:
 
 
     def __timer_wrap(self, name):
-        assert name in self.timers
-
         with self.timerlock:
+            if name not in self.timers:
+                return
+
             # One at a time only
             item = self.timers[name]
             item.run_function()
 
-        if not item.repeat:
-            del self.timers[name]
-        else:
-           # Add it back
-           self.add_repeat(name, item.time, item.function, item.args, item.kwargs)
+            if not item.repeat:
+                del self.timers[name]
+            else:
+               # Add it back
+               self.add_repeat(name, item.time, item.function, item.args,
+                               item.kwargs)
 
 
     """ Add a timer """
     def add(self, name, time, repeat, function, args=[], kwargs={}):
-        if name in self.timers:
-            self.timers[name].timer.cancel()
+        with self.timerlock:
+            if name in self.timers:
+                self.timers[name].timer.cancel()
 
-        timer = _Timer(time, self.__timer_wrap, args=[name])
-        self.timers[name] = TimerItem(timer, time, repeat, function, args,
-                                      kwargs)
+            timer = _Timer(time, self.__timer_wrap, args=[name])
+            self.timers[name] = TimerItem(timer, time, repeat, function, args,
+                                          kwargs)
 
-        self.timers[name].timer.start()
+            self.timers[name].timer.start()
 
 
     """ Add a oneshot timer """
@@ -63,18 +66,20 @@ class Timer:
 
     """ Cancel a timer """
     def cancel(self, name):
-        try:
-            timer = self.timers[name].timer
-            timer.cancel()
-            del self.timers[name]
-        except KeyError:
-            return True
+        with self.timerlock:
+            try:
+                timer = self.timers[name].timer
+                timer.cancel()
+                del self.timers[name]
+            except KeyError:
+                return True
 
 
     """ Cancel all timers """
     def cancel_all(self):
-        for name, timer in self.timers.items():
-            timer.timer.cancel()
+        with self.timerlock:
+            for name, timer in self.timers.items():
+                timer.timer.cancel()
 
-        self.timers = dict() 
+            self.timers.clear()
 
