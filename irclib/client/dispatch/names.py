@@ -7,30 +7,30 @@ def dispatch_names(client, line):
     ch = client.channels.get(line.params[2], None)
     if ch is None: return
 
-    names = line.params[-1].split()
-    for name in names:
-        # Go through each character in the name
+    nicks = line.params[-1].split()
+    for nick in nicks:
+        # Go through each character in the nick
         # look for channel prefixes
         mode = []
-        while name[0] in client.prefix_to_mode:
+        while nick[0] in client.prefix_to_mode:
             # Shift
-            prefix = name[0]
-            name = name[1:]
+            prefix = nick[0]
+            nick = nick[1:]
             mode.append(client.prefix_to_mode[prefix])
 
         # Apply
         for m in mode:
-            ch.modes.add_mode(m, name)
+            ch.modes.add_mode(m, nick)
 
         # Add the user
-        if name not in client.users:
-            client.users[name] = User(client, name)
+        if nick not in client.users:
+            client.users[nick] = User(client, nick)
 
         # Add channel to user
-        client.users[name].channels[ch.name] = ch
+        client.users[nick].channel_add(ch.name, ch)
 
         # Add user to channel
-        ch.user_add(name, client.users[name])
+        ch.user_add(nick, client.users[nick])
 
 
 hooks_in = (
