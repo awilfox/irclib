@@ -4,6 +4,7 @@ import errno
 import warnings
 import socket
 import logging
+from threading import RLock
 from abc import ABCMeta, abstractmethod
 
 from irclib.common.six import u
@@ -47,6 +48,7 @@ class IRCClientNetwork(object):
         # Connection flag
         self.connected = False
         self.sock = None
+        self.ssl_wrapped = False
 
         # Dispatch
         self.dispatch_cmd_in = Dispatcher()
@@ -56,6 +58,9 @@ class IRCClientNetwork(object):
 
         # Our logger
         self.logger = logging.getLogger(__name__)
+
+        # Our I/O lock
+        self.iolock = RLock()
 
 
     """ Default connection reset method """
@@ -87,8 +92,9 @@ class IRCClientNetwork(object):
         if line.cancelled:
             self.logger.debug('Line cancelled due to hook')
 
-        self.log_callback(line, False)
-        self.send(bytes(line))
+        with self.iolock:
+            self.log_callback(line, False)
+            self.send(bytes(line))
 
 
     """ Write a CTCP request to the wire """
@@ -114,26 +120,34 @@ class IRCClientNetwork(object):
     Note gevent will not be pleased if you do not have a timeout.
     """
     def connect(self, timeout=10):
-        if not self.connected:
-            self.sock = socket.socket()
-            self.__buffer = ''
-            self.reset()
+        with self.iolock:
+            if not self.connected:
+                self.sock = socket.socket()
+                self.__buffer = ''
+                self.ssl_wrapped = False
+                self.reset()
 
-        if timeout is not None:
-            self.sock.settimeout(timeout)
-        self.sock.connect((self.host, self.port))
-        self.connected = True
+            if timeout is not None:
+                self.sock.settimeout(timeout)
+            self.sock.connect((self.host, self.port))
+            self.connected = True
 
-        if self.use_ssl and not self.use_starttls:
-            self.wrap_ssl()
+            if self.use_ssl and not self.use_starttls:
+                self.wrap_ssl()
 
 
     """ Wrap the socket in SSL """
     def wrap_ssl(self):
-        if self.connected:
-            self.logger.info("Beginning SSL wrapping")
-        self.sock = ssl.wrap_socket(self.sock)
-        self.use_ssl = True
+        with self.iolock:
+            if self.connected:
+                self.logger.info('Beginning SSL wrapping')
+
+            if self.ssl_wrapped:
+                self.logger.warn('Attempting to wrap SSL-wrapped class')
+
+            self.sock = ssl.wrap_socket(self.sock)
+            self.use_ssl = True
+            self.ssl_wrapped = True
 
 
     """ Recieve data from the wire """
@@ -225,10 +239,11 @@ class IRCClientNetwork(object):
 
     """ Recieve and process lines (blocking version) """
     def process_in(self):
-        if not self.connected:
-            self.connect()
+        with self.iolock:
+            if not self.connected:
+                self.connect()
 
-        return self.process_lines(self.recv())
+            return self.process_lines(self.recv())
 
 
     """ Process lines for real """
