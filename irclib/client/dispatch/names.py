@@ -9,23 +9,14 @@ def dispatch_names(client, line):
 
     names = line.params[-1].split()
     for name in names:
-        # Go through each name
-        keepscan = True # Ensure at least one iteration
-        mode = ''
-        while keepscan:
-            # If we don't find a prefix, there's nothing else to look for.
-            # We assume there isn't for this reason.
-            keepscan = False
-
-            # Check for prefix
-            if name[0] in client.prefix_to_mode:
-                # Shift
-                prefix = name[0]
-                name = name[1:]
-                mode += client.prefix_to_mode[prefix]
-
-                # We found one. There could be another, thus
-                keepscan = True # look for more
+        # Go through each character in the name
+        # look for channel prefixes
+        mode = []
+        while name[0] in client.prefix_to_mode:
+            # Shift
+            prefix = name[0]
+            name = name[1:]
+            mode.append(client.prefix_to_mode[prefix])
 
         # Apply
         for m in mode:
