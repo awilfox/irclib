@@ -11,6 +11,7 @@ from irclib.common.six import u
 from irclib.common.dispatch import Dispatcher
 from irclib.common.line import Line
 from irclib.common.util import socketerror
+from irclib.common.timer import Timer
 
 try:
     import ssl
@@ -184,6 +185,38 @@ class IRCClientNetwork(object):
                 except socket.error:
                     self.connected = False
                     raise
+
+
+    """ Default oneshot timer implementation """
+    def timer_oneshot(self, name, time, function):
+        if not hasattr(self, '_timer'):
+            self._timer = Timer()
+
+        return self._timer.add_oneshot(name, time, function)
+
+
+    """ Default recurring timer implementation """
+    def timer_repeat(self, name, time, function):
+        if not hasattr(self, '_timer'):
+            self._timer = Timer()
+
+        return self._timer.add_repeat(name, time, function)
+
+
+    """ Default cancellation function for timers """
+    def timer_cancel(self, name):
+        if not hasattr(self, '_timer'):
+            raise ValueError('No timers added!')
+
+        return self._timer.cancel(name)
+
+
+    """ Default cancellation function for all timers """
+    def timer_cancel_all(self):
+        if not hasattr(self, '_timer'):
+            raise ValueError('No timers added!')
+
+        return self._timer.cancel_all()
 
 
     """ Dispatch for a command incoming """

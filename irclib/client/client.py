@@ -9,7 +9,6 @@ from copy import deepcopy
 
 from irclib.client.network import IRCClientNetwork
 from irclib.common.modes import ModeSet
-from irclib.common.timer import Timer
 from irclib.common.six import u, b
 from irclib.common.colourmap import replace_colours
 
@@ -75,38 +74,6 @@ class IRCClient(IRCClientNetwork):
 
         # Set everything up
         self.reset()
-
-
-    """ Default oneshot timer implementation """
-    def timer_oneshot(self, name, time, function):
-        if not hasattr(self, '_timer'):
-            self._timer = Timer()
-
-        return self._timer.add_oneshot(name, time, function)
-
-
-    """ Default recurring timer implementation """
-    def timer_repeat(self, name, time, function):
-        if not hasattr(self, '_timer'):
-            self._timer = Timer()
-
-        return self._timer.add_repeat(name, time, function)
-
-
-    """ Default cancellation function for timers """
-    def timer_cancel(self, name):
-        if not hasattr(self, '_timer'):
-            raise ValueError('No timers added!')
-
-        return self._timer.cancel(name)
-
-    
-    """ Default cancellation function for all timers """
-    def timer_cancel_all(self):
-        if not hasattr(self, '_timer'):
-            raise ValueError('No timers added!')
-
-        return self._timer.cancel_all()
 
 
     """ Logging callback """
