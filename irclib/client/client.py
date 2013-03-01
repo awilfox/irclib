@@ -276,6 +276,11 @@ class IRCClient(IRCClientNetwork):
     def connect(self, timeout=10):
         IRCClientNetwork.connect(self, timeout)
 
+        self.do_handshake()
+
+
+    """ Do actual connect stuff """
+    def do_handshake(self):
         if not self.use_cap:
             # Not using CAP :(
             self.dispatch_register()
