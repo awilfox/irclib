@@ -60,7 +60,9 @@ class IRCClientNetwork(object):
         self.logger = logging.getLogger(__name__)
 
         # Our I/O lock
-        self.iolock = RLock()
+        self.inlock = RLock()
+        self.outlock = RLock()
+        self.connlock = RLock()
 
 
     """ Default connection reset method """
@@ -92,9 +94,8 @@ class IRCClientNetwork(object):
         if line.cancelled:
             self.logger.debug('Line cancelled due to hook')
 
-        with self.iolock:
-            self.log_callback(line, False)
-            self.send(bytes(line))
+        self.log_callback(line, False)
+        self.send(bytes(line))
 
 
     """ Write a CTCP request to the wire """
@@ -120,7 +121,7 @@ class IRCClientNetwork(object):
     Note gevent will not be pleased if you do not have a timeout.
     """
     def connect(self, timeout=10):
-        with self.iolock:
+        with self.connlock:
             if not self.connected:
                 self.sock = socket.socket()
                 self.__buffer = ''
@@ -138,7 +139,7 @@ class IRCClientNetwork(object):
 
     """ Wrap the socket in SSL """
     def wrap_ssl(self):
-        with self.iolock:
+        with self.connlock:
             if self.connected:
                 self.logger.info('Beginning SSL wrapping')
 
@@ -152,35 +153,37 @@ class IRCClientNetwork(object):
 
     """ Recieve data from the wire """
     def recv(self):
-        self.sock.settimeout(None)
-        while '\r\n' not in self.__buffer:
-            try:
-                data = self.sock.recv(2048)
-            except socket.error:
-                self.connected = False
-                raise
+        with self.inlock:
+            self.sock.settimeout(None)
+            while '\r\n' not in self.__buffer:
+                try:
+                    data = self.sock.recv(2048)
+                except socket.error:
+                    self.connected = False
+                    raise
 
-            if not data:
-                socketerror(errno.ECONNRESET, instance=self)
+                if not data:
+                    socketerror(errno.ECONNRESET, instance=self)
 
-            self.__buffer += data.decode('UTF-8', 'replace')
+                self.__buffer += data.decode('UTF-8', 'replace')
 
-        lines = self.__buffer.split('\r\n')
-        self.__buffer = lines.pop() 
+            lines = self.__buffer.split('\r\n')
+            self.__buffer = lines.pop() 
 
-        return lines
+            return lines
 
 
     """ Send data onto the wire """
     def send(self, data):
-        sendlen = len(data)
-        curlen = 0
-        while curlen < sendlen:
-            try:
-                curlen += self.sock.send(data[curlen:])
-            except socket.error:
-                self.connected = False
-                raise
+        with self.outlock:
+            sendlen = len(data)
+            curlen = 0
+            while curlen < sendlen:
+                try:
+                    curlen += self.sock.send(data[curlen:])
+                except socket.error:
+                    self.connected = False
+                    raise
 
 
     """ Dispatch for a command incoming """
@@ -239,11 +242,10 @@ class IRCClientNetwork(object):
 
     """ Recieve and process lines (blocking version) """
     def process_in(self):
-        with self.iolock:
-            if not self.connected:
-                self.connect()
+        if not self.connected:
+            self.connect()
 
-            return self.process_lines(self.recv())
+        return self.process_lines(self.recv())
 
 
     """ Process lines for real """
