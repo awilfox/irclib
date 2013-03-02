@@ -21,9 +21,11 @@ The library presently supports the following:
 
 2) Design
 IRCLib is primarily designed with blocking I/O in mind, as that is the simplest
-paradigm to program for (and most common), and things like gevent exist. It
-should not be too difficult to force the bot to use a non-blocking mode of
-operation with custom send/recv methods; prod around in IRCClientNetwork.
+paradigm to program for (and most common). Non-blocking operation is supported;
+simply call IRCClient.process_in when recieves are ready, and IRCClient.send
+with no parameters to flush the buffer when sends are ready. Check the buffer
+(client.send_buffer) to determine whether or not to send; if it has data, then
+you need to send data at some point when the socket is ready.
 
 The Python threading.Timer module is used but can be easily swapped for any
 other form of asynchronous timers.
