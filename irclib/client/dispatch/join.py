@@ -55,7 +55,7 @@ def dispatch_client_join(client, line):
 
     if len(line.params) > 1:
         account = line.params[1]
-        if account == '*':
+        if account == '*' and client.identified:
             # Well shit. We've been logged out. :(
             client.logger.warn('We\'ve been logged out!')
             client.identified = False
