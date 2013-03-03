@@ -18,6 +18,7 @@ The library presently supports the following:
 - Server passwords (you'd be surprised how many don't support this...)
 - Timers (timed events)
 - Dynamic dispatch
+- User tracking (account name, whois parsing, etc.)
 
 2) Design
 IRCLib is primarily designed with blocking I/O in mind, as that is the simplest
