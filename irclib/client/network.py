@@ -11,7 +11,7 @@ from irclib.common.six import u
 from irclib.common.dispatch import Dispatcher
 from irclib.common.line import Line
 from irclib.common.util import socketerror
-from irclib.common.timer import Timer
+from irclib.common.timer import TimerList
 
 try:
     import ssl
@@ -242,7 +242,7 @@ class IRCClientNetwork(object):
     """ Default oneshot timer implementation """
     def timer_oneshot(self, name, time, function):
         if not hasattr(self, '_timer'):
-            self._timer = Timer()
+            self._timer = TimerList()
 
         return self._timer.add_oneshot(name, time, function)
 
@@ -250,7 +250,7 @@ class IRCClientNetwork(object):
     """ Default recurring timer implementation """
     def timer_repeat(self, name, time, function):
         if not hasattr(self, '_timer'):
-            self._timer = Timer()
+            self._timer = TimerList()
 
         return self._timer.add_repeat(name, time, function)
 

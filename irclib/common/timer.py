@@ -1,9 +1,15 @@
 """ An implementation of timers using the threading module. """
 
-from threading import Timer as _Timer
-from threading import RLock
+import sys
+import traceback
+from threading import Timer, RLock, Event
+try:
+    from queue import Queue
+except ImportError:
+    from Queue import Queue
 
-class TimerItem:
+
+class TimerItem(object):
     def __init__(self, timer, time, repeat, function, args=[], kwargs={}):
         self.timer = timer
         self.time = time
@@ -18,10 +24,13 @@ class TimerItem:
 
 
 """ Creates timers """
-class Timer:
+class TimerList(object):
     def __init__(self):
         self.timers = dict()
         self.timerlock = RLock()
+
+        self.exqueue = Queue()
+        self.exceptions = Event()
 
 
     def __timer_wrap(self, name):
@@ -29,9 +38,15 @@ class Timer:
             if name not in self.timers:
                 return
 
-            # One at a time only
             item = self.timers[name]
-            item.run_function()
+
+            try:
+                item.run_function()
+            except:
+                print('Exception in timer', name)
+                traceback.print_exc()
+                self.exqueue.put(sys.exc_info())
+                self.exceptions.set()
 
             if not item.repeat:
                 del self.timers[name]
@@ -47,7 +62,7 @@ class Timer:
             if name in self.timers:
                 self.timers[name].timer.cancel()
 
-            timer = _Timer(time, self.__timer_wrap, args=[name])
+            timer = Timer(time, self.__timer_wrap, args=[name])
             self.timers[name] = TimerItem(timer, time, repeat, function, args,
                                           kwargs)
 

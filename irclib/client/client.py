@@ -76,7 +76,7 @@ class IRCClient(IRCClientNetwork):
 
         # Set everything up
         self.reset()
-        
+
         # Fix printing Unicode on the screen
         if sys.stdout.encoding != "UTF-8":
             sys.stdout = codecs.getwriter('utf8')(sys.stdout)
@@ -100,10 +100,17 @@ class IRCClient(IRCClientNetwork):
     """ Generator for IRC lines, e.g. non-terminating stream """
     def get_lines(self):
         while True:
-            for l in self.process_in():
-                line = (yield l)
-                if line is not None:
-                    self.linewrite(line)
+            try:
+                for l in self.process_in():
+                    line = (yield l)
+                    if line is not None:
+                        self.linewrite(line)
+            except:
+                try:
+                    self.timer_cancel_all()
+                except ValueError:
+                    pass
+                raise
 
 
     """ Create default dispatches
@@ -164,6 +171,12 @@ class IRCClient(IRCClientNetwork):
 
     """ Reset everything """
     def reset(self):
+        # Cancel timers
+        try:
+            self.timer_cancel_all()
+        except ValueError:
+            pass
+
         # umodes
         self.umodes = ModeSet()
         self.snomask = None
