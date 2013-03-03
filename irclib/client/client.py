@@ -2,6 +2,8 @@
 
 from __future__ import unicode_literals, print_function
 
+import sys
+import codecs
 import importlib
 import logging
 
@@ -11,8 +13,12 @@ from irclib.client.network import IRCClientNetwork
 from irclib.common.modes import ModeSet
 from irclib.common.six import u, b
 from irclib.common.colourmap import replace_colours
-import sys
-import codecs
+
+try:
+    from queue import Queue
+except ImportError:
+    from Queue import Queue
+
 
 """ Basic IRC client class. """
 class IRCClient(IRCClientNetwork):
@@ -47,7 +53,7 @@ class IRCClient(IRCClientNetwork):
         self.password = kwargs.get('password', None)
         self.default_channels = kwargs.get('channels', [])
         self.channel_keys = kwargs.get('channel_keys', {})
-        self.keepalive = kwargs.get('keepalive', 30)
+        self.keepalive = kwargs.get('keepalive', 60)
         self.use_cap = kwargs.get('use_cap', True)
         self.use_sasl = kwargs.get('use_sasl', False)
         self.sasl_username = kwargs.get('sasl_username', None)
@@ -120,8 +126,8 @@ class IRCClient(IRCClientNetwork):
     def default_dispatch(self):
         # Default list of dispatchers
         dispatchers = ['account', 'away', 'introspect', 'isupport', 'join',
-                       'mode', 'names', 'nick', 'part', 'pingpong', 'privmsg',
-                       'quit', 'topic', 'welcome', 'who', 'whois']
+                       'mode', 'monitor', 'names', 'nick', 'part', 'pingpong',
+                       'privmsg', 'quit', 'topic', 'welcome', 'who', 'whois']
 
         if self.use_starttls:
             dispatchers.append('starttls')
@@ -222,7 +228,11 @@ class IRCClient(IRCClientNetwork):
         # Pending WHOX replies
         self._whox_pending.clear()
 
+        # ISON list pending
+        self._ison_list = Queue()
+
         try:
+            # Cancel all outstanding timers
             self.timer_cancel_all()
         except ValueError:
             pass
