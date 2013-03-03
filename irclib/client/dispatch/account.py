@@ -10,7 +10,8 @@ def dispatch_account(client, line):
         # Unset
         account = ''
 
-    if nick not in client.users[nick]:
+    if nick not in client.users:
+        # Not entirely sure why this would happen but ok :p.
         user = line.hostmask.user
         host = line.hostmask.host
 
