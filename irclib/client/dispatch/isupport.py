@@ -5,7 +5,7 @@ from irclib.common.numerics import *
 
 def dispatch_isupport(client, line):
     try:
-        isupport = line.params[2:-1]
+        isupport = line.params[1:-1]
     except:
         client.logger.error('ISUPPORT broken, probably old server')
         return
