@@ -74,6 +74,10 @@ class IRCClient(IRCClientNetwork):
 
         # Set everything up
         self.reset()
+        
+        # Fix printing Unicode on the screen
+        if sys.stdout.encoding != "UTF-8":
+            sys.stdout = codecs.getwriter('utf8')(sys.stdout)
 
 
     """ Logging callback """
