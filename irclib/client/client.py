@@ -11,6 +11,8 @@ from irclib.client.network import IRCClientNetwork
 from irclib.common.modes import ModeSet
 from irclib.common.six import u, b
 from irclib.common.colourmap import replace_colours
+import sys
+import codecs
 
 """ Basic IRC client class. """
 class IRCClient(IRCClientNetwork):
