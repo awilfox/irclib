@@ -296,6 +296,28 @@ class IRCClient(IRCClientNetwork):
         self.dispatch_register()
 
 
+    """ Add a user to expiry checks """
+    def expire_user(self, nick):
+        if len(self.users[nick].channels) == 0:
+            if 'MONITOR' in self.isupport:
+                # We support monitor :D
+                self.cmdwrite('MONITOR', ('+', nick))
+            else:
+                # :( use ISON as a fallback
+                isoncheck = partial(self.cmdwrite, 'ISON', (nick,))
+                timername = 'ison_user_{}'.format(nick)
+                self.timer_repeat(timername, 60, isoncheck)
+                isoncheck()
+
+
+    """ Unexpire a user """
+    def unexpire_user(self, nick):
+        self.timer_cancel('ison_user_{}'.format(nick)
+        if 'MONITOR' in self.isupport:
+            # XXX might send useless monitor
+            self.cmdwrite('MONITOR', ('-', nick))
+
+
     """ Combine channels """
     def combine_channels(self, chlist, chkeys={}):
         chcount = 0

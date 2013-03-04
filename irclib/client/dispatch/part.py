@@ -24,17 +24,7 @@ def dispatch_other_part(client, line):
 
     client.users[nick].channel_del(channel)
 
-    if len(client.users[nick].channels) == 0:
-        if 'MONITOR' in client.isupport:
-            # We support monitor :D
-            client.cmdwrite('MONITOR', ('+', nick))
-        else:
-            # :( use ISON as a fallback
-            isoncheck = partial(client.cmdwrite, 'ISON', (nick,))
-            timername = 'ison_user_{}'.format(nick)
-            client.timer_repeat(timername, 60, isoncheck)
-
-            isoncheck()
+    client.expire_user(nick)
 
 
 """ Dispatch us parting/being kicked """

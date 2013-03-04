@@ -29,8 +29,7 @@ def dispatch_other_join(client, line):
     user = line.hostmask.user
     host = line.hostmask.host
 
-    # Cancel ISON
-    client.timer_cancel('ison_user_{}'.format(nick))
+    unexpire_user(nick)
 
     # Create a user if one doesn't exist
     if nick not in client.users:

@@ -7,18 +7,6 @@ from irclib.client.user import User
 from irclib.common.line import Line, Hostmask
 from irclib.common.util import splitstr
 
-def expire_user(client, nick):
-    if len(client.users[nick].channels) == 0:
-        if 'MONITOR' in client.isupport:
-            # We support monitor :D
-            client.cmdwrite('MONITOR', ('+', nick))
-        else:
-            # :( use ISON as a fallback
-            isoncheck = partial(client.cmdwrite, 'ISON', (nick,))
-            timername = 'ison_user_{}'.format(nick)
-            client.timer_repeat(timername, 60, isoncheck)
-            isoncheck()
-
 
 """ Foreign privmsg (NOT CTCP) """
 def dispatch_privmsg(client, line):
@@ -39,7 +27,7 @@ def dispatch_privmsg(client, line):
     if nick not in client.users:
         # TODO - maybe whois?
         client.users[nick] = User(nick, line.hostmask.user, line.hostmask.host)
-        expire_user(client, nick)
+        client.expire_user(nick)
         
 
 """ Dispatch CTCP """
