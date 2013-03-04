@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 
-from __future__ import unicode_literals, print_function
+from __future__ import unicode_literals, print_function, division
 
 import sys
 import codecs
 import importlib
 import logging
 
+from functools import partial
+from random import randint
 from copy import deepcopy
 
 from irclib.client.network import IRCClientNetwork
@@ -312,8 +314,8 @@ class IRCClient(IRCClientNetwork):
 
             # Sod it. this will never fit. :/
             if clen > MAXLEN:
-                self.logger.error('Unable to join channel:key; too long: {}:{}'.format(
-                    ch, key))
+                self.logger.error('Unable to join channel:key; too long: '
+                                  '{}:{}'.format(ch, key))
                 continue
 
             # Full buffer!
@@ -333,8 +335,22 @@ class IRCClient(IRCClientNetwork):
         if len(chbuf) > 0:
             sbuf.append((chbuf, keybuf))
 
+        if len(sbuf) > 3:
+            # Pace our joins
+            pace_join = True
+            counter = 0
+        else:
+            pace_join = False
+
         for buf in sbuf:
             channels = ','.join(buf[0])
             keys = ' '.join(buf[1])
-            self.cmdwrite('JOIN', (channels, keys))
+            joinfunc = partial(self.cmdwrite, 'JOIN', (channels, keys))
+            if pace_join:
+                timername = 'join_channel_{}'.format(str(counter))
+                interval = randint(1, 150) / 10
+                self.timer_oneshot(timername, interval, joinfunc)
+                counter += 1
+            else:
+                joinfunc()
 
