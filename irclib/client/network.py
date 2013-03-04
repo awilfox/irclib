@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from __future__ import unicode_literals, division, print_function
+
 import errno
 import warnings
 import socket
@@ -7,7 +9,7 @@ import logging
 from threading import RLock
 from abc import ABCMeta, abstractmethod
 
-from irclib.common.six import u
+from irclib.common.six import u, PY3
 from irclib.common.dispatch import Dispatcher
 from irclib.common.line import Line
 from irclib.common.util import socketerror
@@ -108,18 +110,18 @@ class IRCClientNetwork(object):
             self.logger.debug('Line cancelled due to hook')
 
         self.log_callback(line, False)
-        self.send(bytes(line))
+        self.send(str(line).encode('utf-8', 'replace'))
 
 
     """ Write a CTCP request to the wire """
     def ctcpwrite(self, target, command, params=''):
-        response = u('\x01{} {}\x01').format(command, params)
+        response = '\x01{} {}\x01'.format(command, params)
         self.cmdwrite('PRIVMSG', (target, response))
 
 
     """ Write a CTCP reply to the wire """
     def nctcpwrite(self, target, command, params=''):
-        response = u('\x01{} {}\x01').format(command, params)
+        response = '\x01{} {}\x01'.format(command, params)
         self.cmdwrite('NOTICE', (target, response))
 
 
