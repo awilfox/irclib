@@ -9,7 +9,7 @@ import logging
 from threading import RLock
 from abc import ABCMeta, abstractmethod
 
-from irclib.common.six import u, b
+from irclib.common.six import u, b, PY3
 from irclib.common.dispatch import Dispatcher
 from irclib.common.line import Line
 from irclib.common.util import socketerror
@@ -110,7 +110,10 @@ class IRCClientNetwork(object):
             self.logger.debug('Line cancelled due to hook')
 
         self.log_callback(line, False)
-        self.send(u(line).encode('utf-8', 'replace'))
+        if PY3:
+            self.send(bytes(line))
+        else:
+            self.send(unicode(line).encode('utf-8', 'replace'))
 
 
     """ Write a CTCP request to the wire """
