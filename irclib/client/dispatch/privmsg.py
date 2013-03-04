@@ -3,7 +3,6 @@ from functools import partial
 from copy import deepcopy
 
 from irclib.common.dispatch import PRIORITY_DEFAULT, PRIORITY_LOW
-from irclib.client.user import User
 from irclib.common.line import Line, Hostmask
 from irclib.common.util import splitstr
 
@@ -26,7 +25,9 @@ def dispatch_privmsg(client, line):
 
     if nick not in client.users:
         # TODO - maybe whois?
-        client.users[nick] = User(nick, line.hostmask.user, line.hostmask.host)
+        client.create_user(nick, line.hostmask.user, line.hostmask.host)
+
+        # Set the expiry timer
         client.expire_user(nick)
         
 

@@ -30,7 +30,7 @@ def dispatch_welcome(client, line):
     client.timer_repeat('keepalive', client.keepalive, keepalive)
 
     # Do joins
-    client.combine_channels(client.default_channels, client.channel_keys)
+    client.join_channels(client.default_channels, client.channel_keys)
 
 
 hooks_in = ( 

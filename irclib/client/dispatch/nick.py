@@ -1,7 +1,6 @@
 from random import randint
 
 from irclib.common.dispatch import PRIORITY_DEFAULT
-from irclib.client.user import User
 from irclib.common.numerics import *
 
 """ Nickname tracking """
@@ -36,7 +35,7 @@ def dispatch_nick(client, line):
         client.logger.debug('Got a nick change for unknown user {}:{}'.format(
             oldnick, newnick))
         # Not sure why this is happening but ok.
-        client.users[newnick] = User(client, newnick, user, host)
+        client.create_user(newnick, user, host)
 
 
 """ Munge a nick """

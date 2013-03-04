@@ -1,5 +1,4 @@
 from irclib.common.dispatch import PRIORITY_DEFAULT
-from irclib.client.user import User
 from irclib.common.numerics import *
 
 """ Dispatch names """
@@ -24,7 +23,7 @@ def dispatch_names(client, line):
 
         # Add the user
         if nick not in client.users:
-            client.users[nick] = User(client, nick)
+            client.create_user(nick)
 
         # Add channel to user
         client.users[nick].channel_add(ch.name, ch)

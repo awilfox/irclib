@@ -1,5 +1,4 @@
 from irclib.common.dispatch import PRIORITY_DEFAULT
-from irclib.client.user import User
 
 """ Do account-notify stuff """
 def dispatch_account(client, line):
@@ -15,7 +14,7 @@ def dispatch_account(client, line):
         user = line.hostmask.user
         host = line.hostmask.host
 
-        client.users[nick] = User(nick, user, host)
+        client.create_user(nick, user, host)
 
     client.users[nick].account = account
 

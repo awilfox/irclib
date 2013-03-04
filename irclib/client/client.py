@@ -11,6 +11,8 @@ from functools import partial
 from random import randint
 from copy import deepcopy
 
+from irclib.client.user import User
+from irclib.client.channel import Channel
 from irclib.client.network import IRCClientNetwork
 from irclib.common.modes import ModeSet
 from irclib.common.six import u, b
@@ -318,8 +320,41 @@ class IRCClient(IRCClientNetwork):
             self.cmdwrite('MONITOR', ('-', nick))
 
 
-    """ Combine channels """
-    def combine_channels(self, chlist, chkeys={}):
+    """ Create a user """
+    def create_user(self, nick, user=None, host=None, realname=None,
+                    account=None):
+        self.users[nick] = User(self, nick, user, host, realname, account)
+
+
+    """ Delete a user """
+    def delete_user(self, nick):
+        self.users.pop(nick, None)
+
+
+    """ Create a channel """
+    def create_channel(self, channel):
+        self.channels[channel] = Channel(self, channel)
+
+
+    """ Destroy a channel """
+    def delete_channel(self, channel):
+        self.channels.pop(channel, None)
+
+
+    """ Attach channel and user """
+    def attach_nick_channel(self, nick, channel):
+        if nick not in self.users:
+            self.create_user(nick)
+
+        if channel not in self.channels:
+            self.create_channel(channel)
+
+        self.channels[channel].user_add(nick, client.users[nick])
+        self.users[nick].channel_add(channel, client.channels[channel])
+
+
+    """ Combine channels for join """
+    def join_channels(self, chlist, chkeys={}):
         chcount = 0
         buflen = 0
         sbuf = []

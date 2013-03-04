@@ -2,8 +2,6 @@ from random import randint
 from functools import partial
 
 from irclib.common.dispatch import PRIORITY_DEFAULT
-from irclib.client.user import User
-from irclib.client.channel import Channel
 from irclib.common.numerics import *
 
 """ Dispatch other user join """
@@ -33,7 +31,7 @@ def dispatch_other_join(client, line):
 
     # Create a user if one doesn't exist
     if nick not in client.users:
-        client.users[nick] = User(client, nick, user, host, realname, account)
+        client.create_user(nick, user, host, realname, account)
 
     if channel in client.channels:
         client.channels[channel].user_add(nick, client.users[nick])
@@ -60,7 +58,7 @@ def dispatch_client_join(client, line):
             client.identified = False
 
     if channel not in client.channels:
-        client.channels[channel] = Channel(channel, client.isupport)
+        client.create_channel(channel)
 
     # Request modes
     client.cmdwrite('MODE', [channel])

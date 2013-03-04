@@ -53,7 +53,7 @@ def dispatch_who(client, line):
 
     # Look up the user
     if nick not in client.users:
-        client.users[nick] = User(nick, user, host, realname)
+        client.create_user(nick, user, host, realname)
 
     # Set this...
     client.users[nick].server = server
@@ -105,9 +105,8 @@ def dispatch_whox(client, line):
         ip = None
 
     if nick not in client.users:
-        client.users[nick] = User(nick, user, host, realname, account)
-        client.channels[channel].user_add(nick, client.users[nick])
-        client.users[nick].channel_add(channel, client.channels[channel])
+        client.create_user(nick, user, host, realname, account)
+        client.attach_nick_channel(nick, channel)
 
     # Set some extended info
     client.users[nick].idle = idle
