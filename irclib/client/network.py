@@ -110,7 +110,10 @@ class IRCClientNetwork(object):
             self.logger.debug('Line cancelled due to hook')
 
         self.log_callback(line, False)
-        self.send(str(line).encode('utf-8', 'replace'))
+        if PY3:
+            self.send(bytes(line))
+        else:
+            self.send(str(line))
 
 
     """ Write a CTCP request to the wire """
