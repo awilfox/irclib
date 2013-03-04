@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
+from __future__ import unicode_literals
+
 from itertools import islice
 from collections import deque
-
-from irclib.common.six import u, b
 
 """ Stores a user hostmask
 
@@ -175,10 +175,10 @@ class Line:
             else:
                 line.extend(self.params)
 
-        return u(' ').join(line) + u('\r\n')
+        return ' '.join(line) + '\r\n'
 
     def __bytes__(self):
-        return str(self).encode('UTF-8')
+        return str(self).encode('UTF-8', 'replace')
 
     def __repr__(self):
          return 'Line({})'.format(str(self))
