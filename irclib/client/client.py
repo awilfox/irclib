@@ -196,6 +196,7 @@ class IRCClient(IRCClientNetwork):
 
         # Reset caps
         self.supported_cap = []
+        self.cap_end = False
 
         # Reset ISUPPORT
         self.isupport.clear() 
@@ -262,6 +263,9 @@ class IRCClient(IRCClientNetwork):
 
             self.registered = True
 
+            if self.cap_end:
+                return
+
             # End of CAP if we're not using SASL
             if self.use_cap and not self.use_sasl:
                 self.cap_terminate()
@@ -294,6 +298,10 @@ class IRCClient(IRCClientNetwork):
 
     """ Terminate CAP """
     def cap_terminate(self):
+        if self.cap_end:
+            return
+
+        self.cap_end = True
         self.cmdwrite('CAP', ['END'])
         self.dispatch_register()
 
