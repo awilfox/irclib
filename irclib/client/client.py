@@ -211,6 +211,9 @@ class IRCClient(IRCClientNetwork):
         # Map prefix to mode
         self.prefix_to_mode = {s:m for m,s in self.isupport['PREFIX']}
 
+        # Handshaken?
+        self.handshake = False
+
         # Registered?
         self.registered = False
 
@@ -285,6 +288,10 @@ class IRCClient(IRCClientNetwork):
 
     """ Do actual connect stuff """
     def do_handshake(self):
+        if self.handshake:
+            return
+
+        self.handshake = True
         if not self.use_cap:
             # Not using CAP :(
             self.dispatch_register()
