@@ -312,7 +312,7 @@ class IRCClient(IRCClientNetwork):
 
     """ Unexpire a user """
     def unexpire_user(self, nick):
-        self.timer_cancel('ison_user_{}'.format(nick)
+        self.timer_cancel('ison_user_{}'.format(nick))
         if 'MONITOR' in self.isupport:
             # XXX might send useless monitor
             self.cmdwrite('MONITOR', ('-', nick))
