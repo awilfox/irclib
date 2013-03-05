@@ -149,7 +149,10 @@ class IRCClientNetwork(object):
                     self.wrap_ssl()
 
                 self.send_buffer = bytes()
-                self.recv_buffer = bytes() 
+                if PY3:
+                    self.recv_buffer = bytes() 
+                else:
+                    self.recv_buffer = unicode()
                 self.ssl_wrapped = False
                 self.reset()
 
@@ -206,12 +209,12 @@ class IRCClientNetwork(object):
             if not data:
                 socketerror(errno.ECONNRESET, instance=self)
 
-            self.recv_buffer += data
+            self.recv_buffer += data.decode('utf-8')
             lines = self.recv_buffer.split(b('\r\n'))
             self.recv_buffer = lines.pop()
 
             if lines:
-                lines = [l.decode('utf-8', 'replace') for l in lines]
+                lines = [l for l in lines]
 
             return lines
 
