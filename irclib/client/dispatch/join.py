@@ -27,7 +27,7 @@ def dispatch_other_join(client, line):
     user = line.hostmask.user
     host = line.hostmask.host
 
-    unexpire_user(nick)
+    client.unexpire_user(nick)
 
     # Create a user if one doesn't exist
     if nick not in client.users:
