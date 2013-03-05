@@ -70,6 +70,7 @@ class IRCClientNetwork(object):
         self.dispatch_cmd_out = Dispatcher()
 
         self.dispatch_ctcp_in = Dispatcher()
+        self.dispatch_ctcp_out = Dispatcher()
 
         # Our logger
         self.logger = logging.getLogger(__name__)
@@ -307,6 +308,13 @@ class IRCClientNetwork(object):
                                                        command, param))
 
 
+    """ Dispatch for CTCP outgoing """
+    def call_ctcp_out(self, line, target, command, param):
+        if self.dispatch_ctcp_out.has_name(command):
+            return self.dispatch_ctcp_out.run(command, (self, line, target,
+                                                        command, param))
+
+
     """ Add command dispatch for input
     
     callback function must take line as first argument
@@ -328,6 +336,11 @@ class IRCClientNetwork(object):
     """ Add CTCP dispatch function """
     def add_ctcp_in(self, command, priority, function):
         self.dispatch_ctcp_in.add(command, priority, function)
+
+
+    """ Add CTCP dispatch function outgoing """
+    def add_ctcp_out(self, command, priority, function):
+        self.dispatch_ctcp_out.add(command, priority, function)
 
 
     """ Recieve and process lines (blocking version) """

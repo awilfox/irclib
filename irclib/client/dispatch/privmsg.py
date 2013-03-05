@@ -2,7 +2,8 @@ from time import time, ctime
 from functools import partial
 from copy import deepcopy
 
-from irclib.common.dispatch import PRIORITY_DEFAULT, PRIORITY_LOW
+from irclib.common.dispatch import (PRIORITY_DEFAULT, PRIORITY_LOW,
+                                    PRIORITY_FIRST)
 from irclib.common.line import Line, Hostmask
 from irclib.common.util import splitstr
 
@@ -32,7 +33,7 @@ def dispatch_privmsg(client, line):
         
 
 """ Dispatch CTCP """
-def dispatch_ctcp(client, line):
+def dispatch_ctcp_in(client, line):
     if len(line.params) <= 1:
         return
 
@@ -51,6 +52,23 @@ def dispatch_ctcp(client, line):
 
     # Call CTCP dispatch
     client.call_ctcp_in(line, target, command, param)
+
+
+""" Hook for CTCP going out """
+def dispatch_ctcp_out(client, line):
+    if len(line.params) <= 1: return
+
+
+    target = line.params[0]
+    message = line.params[-1]
+    if not (message.startswith('\x01') or message.endswith('\x01')):
+        return
+
+    message = message.strip('\x01')
+    command, sep, param = message.partition(' ')
+    command = command.upper()
+
+    client.call_ctcp_out(line, target, command, param)
 
 
 """ Dispatch CTCP VERSION """
@@ -136,11 +154,12 @@ def dispatch_split_msg(client, line):
 
 
 hooks_in = (
-    ('PRIVMSG', PRIORITY_DEFAULT, dispatch_ctcp),
+    ('PRIVMSG', PRIORITY_DEFAULT, dispatch_ctcp_in),
     ('PRIVMSG', PRIORITY_LOW, dispatch_privmsg),
 )
 
 hooks_out = (
+    ('PRIVMSG', PRIORITY_FIRST, dispatch_ctcp_out),
     ('PRIVMSG', PRIORITY_LOW, dispatch_split_msg),
     ('PRIVMSG', PRIORITY_LOW, dispatch_pace_msg),
     ('NOTICE', PRIORITY_LOW, dispatch_split_msg),
